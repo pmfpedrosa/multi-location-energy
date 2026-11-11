@@ -5,6 +5,7 @@
   // not the actual Home Assistant renderer or its charts.
   const prefs = label => ({energy_sources:[{type:'grid',stat_energy_from:'sensor.grid',name:label,cost_adjustment_day:0}],device_consumption:[],device_consumption_water:[]});
   window.calls = [];
+  window.loadedFragments = [];
   window.nativePrefs = prefs('Native');
   window.locations = [{id:'a',name:'Home A'},{id:'b',name:'Home B'}];
   window.preferences = {a:prefs('A'),b:prefs('B')};
@@ -26,7 +27,7 @@
   class ConfigPanel extends HTMLElement {routerOptions={routes:{energy:{load:async()=>{}}}};}
   customElements.define('ha-panel-energy',NativeEnergy);customElements.define('ha-config-energy',NativeSettings);customElements.define('fixture-energy-dialog',EnergyDialog);customElements.define('partial-panel-resolver',Resolver);customElements.define('ha-panel-config',ConfigPanel);
   await import('/frontend/panel.js');
-  const hass={user:{is_admin:true},config:{version:'2026.11.0'},states:{},panels:{energy:{component_name:'energy'},config:{component_name:'config'}},connection:{},async callWS(msg){
+  const hass={async loadFragmentTranslation(fragment){window.loadedFragments.push(fragment);},user:{is_admin:true},config:{version:'2026.11.0'},states:{},panels:{energy:{component_name:'energy'},config:{component_name:'config'}},connection:{},async callWS(msg){
     window.calls.push(structuredClone(msg));
     if(msg.type.startsWith('energy/')) throw Error('Global energy API was called');
     if(msg.type.endsWith('locations/list'))return structuredClone(window.locations);
