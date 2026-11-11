@@ -1,5 +1,6 @@
-import { createLocationScope } from "./scope.js?v=0.1.4";
-import { loadNativeEnergy } from "./native-loader.js?v=0.1.4";
+import { createLocationScope } from "./scope.js?v=0.2.0";
+import { loadNativeEnergy } from "./native-loader.js?v=0.2.0";
+import "./generators.js?v=0.2.0";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -46,6 +47,10 @@ class MlePanel extends HTMLElement {
     this.shadowRoot.querySelector("#locations").onchange = event => navigate(`${ROOT}/${event.target.value}/electricity`);
     this.shadowRoot.querySelector("#dashboard").onclick = () => this._go(false);
     this.shadowRoot.querySelector("#settings").onclick = () => this._go(true);
+    const generators = document.createElement("button");
+    generators.id = "generators"; generators.textContent = "Generators";
+    generators.onclick = () => { const { location } = this._selection(); if (location) navigate(`${ROOT}/${location.id}/generators`); };
+    this.shadowRoot.querySelector("#settings").after(generators);
     this.shadowRoot.querySelector("#create").onclick = () => this._nameDialog(false);
     this.shadowRoot.querySelector("#rename").onclick = () => this._nameDialog(true);
     this.shadowRoot.querySelector("#cancel").onclick = () => this.shadowRoot.querySelector("dialog").close();
@@ -134,7 +139,8 @@ class MlePanel extends HTMLElement {
       return;
     }
     this.shadowRoot.querySelector("select").value = location.id;
-    const key = `${location.id}:${settings}`;
+    this.shadowRoot.querySelector("#generators").disabled = !location;
+    const key = `${location.id}:${settings}:${tab === "generators"}`;
     if (this._mountKey === key && this._child) {
       this._child.route = { prefix: `${ROOT}/${location.id}${settings ? "/configure" : ""}`, path: `/${tab}` };
       return;
@@ -145,6 +151,24 @@ class MlePanel extends HTMLElement {
     this._contextSubscribers.clear();
     this._scope = createLocationScope(this._hass, location.id);
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
+    if (tab === "generators") {
+      const child = document.createElement("mle-generators");
+      this._mountKey = key; this._child = child; this._main.append(child);
+      await child.configure(scopedHass, location.id, prefs);
+      return;
+    }
+    const generators = await this._call("generators/get", { location_id: location.id });
+    if (revision !== this._renderRevision || !this.isConnected) return;
+    if (generators.length && !settings && tab === "electricity") {
+      this._mountKey = undefined;
+      navigate(`${ROOT}/${location.id}/generators`);
+      return;
+    }
+    if (generators.length && !settings) {
+      const notice = document.createElement("div"); notice.className = "notice";
+      notice.textContent = "This native view excludes generator electricity. Open Generators for the complete grid, solar, generator, battery and load balance, including gas consumption and efficiency.";
+      this._main.append(notice);
+    }
     if (!settings && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
       this._mountKey = undefined; this._child = undefined;
       const content = document.createElement("div"); content.className = "message";

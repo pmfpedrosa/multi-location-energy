@@ -13,6 +13,7 @@ foreach ($componentFile in Get-ChildItem -LiteralPath $componentRoot -Recurse -F
     New-Item -ItemType Directory -Path (Split-Path -Parent $destinationFile) -Force | Out-Null
     Copy-Item -LiteralPath $componentFile.FullName -Destination $destinationFile
 }
-$archivePath = Join-Path $distRoot 'multi_location_energy-0.1.0.zip'
+$componentVersion = (Get-Content -LiteralPath (Join-Path $componentRoot 'manifest.json') -Raw | ConvertFrom-Json).version
+$archivePath = Join-Path $distRoot "multi_location_energy-$componentVersion.zip"
 Compress-Archive -LiteralPath $stageComponent -DestinationPath $archivePath -Force
 Get-FileHash -LiteralPath $archivePath -Algorithm SHA256 | Format-List

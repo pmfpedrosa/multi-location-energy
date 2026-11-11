@@ -45,6 +45,7 @@
     window.calls.push(structuredClone(msg));
     if(msg.type.startsWith('energy/')) throw Error('Global energy API was called');
     if(msg.type.endsWith('locations/list'))return structuredClone(window.locations);
+    if(msg.type.endsWith('generators/get'))return [];
     if(msg.type.endsWith('locations/create')){const item={id:'c',name:msg.name};window.locations.push(item);window.preferences.c={energy_sources:[],device_consumption:[],device_consumption_water:[]};return item;}
     if(msg.type.endsWith('get_prefs'))return structuredClone(window.preferences[msg.location_id]);
     if(msg.type.endsWith('save_prefs')){window.preferences[msg.location_id]={energy_sources:msg.energy_sources,device_consumption:msg.device_consumption,device_consumption_water:msg.device_consumption_water};return structuredClone(window.preferences[msg.location_id]);}

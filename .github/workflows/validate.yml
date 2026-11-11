@@ -37,6 +37,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install --target test_dependencies probatio
-      - run: node --test tests/scope.test.js
+      - run: node --test tests/*.test.js
       - run: python tests/test_backend.py
       - run: python tests/test_syntax.py

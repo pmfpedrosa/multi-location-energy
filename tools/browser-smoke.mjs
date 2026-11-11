@@ -11,7 +11,7 @@ try { playwright = require("playwright"); }
 catch { playwright = require(process.env.PLAYWRIGHT_MODULE || "C:/Users/pedro.pedrosa.SA/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright"); }
 const server = http.createServer((request, response) => {
   const pathname = new URL(request.url, "http://localhost").pathname;
-  const filename = pathname.startsWith("/frontend/") ? path.join(root, pathname) : path.join(root, "tests/browser-fixture.html");
+  const filename = pathname.startsWith("/frontend/") ? path.join(root, pathname) : path.join(root, pathname === "/generators-fixture" ? "tests/generators-fixture.html" : "tests/browser-fixture.html");
   if (!filename.startsWith(root + path.sep)) {response.writeHead(403).end(); return;}
   response.setHeader("Content-Type", filename.endsWith(".js") ? "text/javascript" : "text/html");
   fs.createReadStream(filename).on("error", () => response.writeHead(404).end()).pipe(response);
@@ -45,6 +45,21 @@ try {
   await page.getByRole("button",{name:"Add grid fixture"}).waitFor();
   assert.equal(await page.evaluate(()=>window.locations.at(-1).name),'Home C');
   assert.equal(await page.evaluate(()=>window.calls.some(call=>call.type.startsWith('energy/'))),false);
+  assert.deepEqual(errors,[]);
+  await page.goto(`http://127.0.0.1:${server.address().port}/generators-fixture`);
+  await page.waitForFunction(()=>window.ready);
+  await page.getByText('24 kWh',{exact:true}).waitFor();
+  await page.getByText('40 %',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Now',exact:true}).click();
+  await page.getByText('0.5 m³/h',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Configure generators',exact:true}).click();
+  await page.getByLabel('Name',{exact:true}).first().fill('Test generator');
+  await page.getByRole('button',{name:'Save generators',exact:true}).click();
+  await page.waitForFunction(()=>window.saved.length===1);
+  assert.equal(await page.evaluate(()=>window.saved[0].location_id),'test-location');
+  assert.equal(await page.evaluate(()=>window.saved[0].generators[0].name),'Test generator');
+  await page.setViewportSize({width:360,height:900});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);
   console.log("Browser boundary smoke passed: native dialog saves stay scoped; switching and creation work; global energy API untouched.");
 } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
