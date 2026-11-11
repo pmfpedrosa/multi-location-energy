@@ -29,6 +29,8 @@ try {
   assert.ok(nativeToolbar.y >= selector.y + selector.height, "Native fixed toolbar must stay below location controls");
   await page.getByRole("button",{name:"Configure",exact:true}).click();
   await page.getByRole("heading",{name:"Translated settings"}).waitFor();
+  await page.getByRole("heading",{name:"Generators",exact:true}).waitFor();
+  assert.equal(await page.locator("#generators").count(),0);
   await page.getByRole("button",{name:"Add grid fixture"}).click();
   await page.getByRole("button",{name:"Save fixture"}).click();
   await page.waitForFunction(()=>window.preferences.a.energy_sources[0].name==='Updated');

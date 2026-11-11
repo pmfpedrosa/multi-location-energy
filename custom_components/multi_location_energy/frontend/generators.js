@@ -1,4 +1,4 @@
-import {total, efficiency, periodEfficiency, live, add, balance, finite} from './generator-math.js?v=0.2.1';
+import {total, efficiency, periodEfficiency, live, add, balance, finite} from './generator-math.js?v=0.2.2';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = (value, unit) => finite(value) ? `${new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(value)} ${unit}` : 'Unavailable';
@@ -15,9 +15,10 @@ export class MleGenerators extends HTMLElement {
     const part=type=>parts.find(p=>p.type===type).value;
     this.start=this.end=`${part('year')}-${part('month')}-${part('day')}`;
     this.generators=await this.call('get');this.ready=true;
+    if(this.settingsOnly){this.renderSettings();return;}
     await this.refresh();
   }
-  connectedCallback(){this.timer=setInterval(()=>{if(this.ready&&!this.editing&&this.mode==='period')this.refresh();},60000);}
+  connectedCallback(){this.timer=setInterval(()=>{if(this.ready&&!this.settingsOnly&&!this.editing&&this.mode==='period')this.refresh();},60000);}
   disconnectedCallback(){clearInterval(this.timer);this.revision++;}
   call(command,args={}){return this.hass.callWS({type:`multi_location_energy/generators/${command}`,location_id:this.locationId,...args});}
   async refresh(){
@@ -48,6 +49,7 @@ export class MleGenerators extends HTMLElement {
   }
   node(name,value,icon,color){return `<div class="node" style="--node:${color}"><div class="circle"><ha-icon icon="mdi:${icon}"></ha-icon>${value}</div>${esc(name)}</div>`;}
   renderDashboard(){
+    if(this.settingsOnly){this.renderSettings();return;}
     if(this.editing)return;
     const now=this.mode==='now', unit=now?'kW':'kWh';
     const sources=this.prefs.energy_sources;
@@ -68,8 +70,14 @@ export class MleGenerators extends HTMLElement {
     ${shared?'<p class="muted">Existing location gas meters are reused for detail only; generator fuel is not added again to location gas totals.</p>':''}
     </ha-card>`;
     for(const mode of ['period','now'])this.shadowRoot.querySelector(`#${mode}`).onclick=()=>{this.mode=mode;if(mode==='period')this.refresh();else {this.revision++;this.loading=false;this.renderDashboard();}};
-    this.shadowRoot.querySelector('#configure').onclick=()=>{this.revision++;this.editing=true;this.draft=structuredClone(this.generators);this.renderEditor();};
+    this.shadowRoot.querySelector('#configure').onclick=()=>{if(this.onconfigure){this.onconfigure();return;}this.openEditor();};
     this.shadowRoot.querySelector('#refresh').onclick=()=>{if(now)this.renderDashboard();else{this.start=this.shadowRoot.querySelector('#start').value;this.end=this.shadowRoot.querySelector('#end').value;this.refresh();}};
+  }
+  openEditor(){this.revision++;this.editing=true;this.draft=structuredClone(this.generators);this.renderEditor();}
+  renderSettings(){
+    if(this.editing)return;
+    this.shadowRoot.innerHTML=`<style>${styles}${editorLayout}</style><ha-card><h2>Generators</h2><p class="muted">Track electricity production, natural gas consumption and electrical efficiency for this location.</p>${this.generators.map(g=>`<p>${esc(g.name)}</p>`).join('')}<button id="manage">${this.generators.length?'Configure generators':'Add generator'}</button></ha-card>`;
+    this.shadowRoot.querySelector('#manage').onclick=()=>{this.openEditor();if(!this.draft.length){this.draft.push({id:crypto.randomUUID(),name:'Generator 1',gas_unit:'m³',factor:'',basis:'LHV'});this.renderEditor();}};
   }
   renderEditor(){
     const select=(key,value,units,required)=>`<select data-key="${key}" ${required?'required':''}><option value="">${required?'Select meter':'Not configured'}</option>${Object.values(this.hass.states).filter(s=>s.entity_id.startsWith('sensor.')&&units.includes(s.attributes.unit_of_measurement)).map(s=>`<option value="${esc(s.entity_id)}" ${s.entity_id===value?'selected':''}>${esc(s.attributes.friendly_name||s.entity_id)} (${esc(s.entity_id)})</option>`).join('')}</select>`;

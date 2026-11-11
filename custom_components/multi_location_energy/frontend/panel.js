@@ -1,6 +1,6 @@
-import { createLocationScope } from "./scope.js?v=0.2.1";
-import { loadNativeEnergy } from "./native-loader.js?v=0.2.1";
-import "./generators.js?v=0.2.1";
+import { createLocationScope } from "./scope.js?v=0.2.2";
+import { loadNativeEnergy } from "./native-loader.js?v=0.2.2";
+import "./generators.js?v=0.2.2";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -47,10 +47,6 @@ class MlePanel extends HTMLElement {
     this.shadowRoot.querySelector("#locations").onchange = event => navigate(`${ROOT}/${event.target.value}/electricity`);
     this.shadowRoot.querySelector("#dashboard").onclick = () => this._go(false);
     this.shadowRoot.querySelector("#settings").onclick = () => this._go(true);
-    const generators = document.createElement("button");
-    generators.id = "generators"; generators.textContent = "Generators";
-    generators.onclick = () => { const { location } = this._selection(); if (location) navigate(`${ROOT}/${location.id}/generators`); };
-    this.shadowRoot.querySelector("#settings").after(generators);
     this.shadowRoot.querySelector("#create").onclick = () => this._nameDialog(false);
     this.shadowRoot.querySelector("#rename").onclick = () => this._nameDialog(true);
     this.shadowRoot.querySelector("#cancel").onclick = () => this.shadowRoot.querySelector("dialog").close();
@@ -68,6 +64,7 @@ class MlePanel extends HTMLElement {
     if (this._scope) {
       const scoped = this._scope.update(this._withTranslations(hass));
       if (this._child) this._child.hass = scoped;
+      if (this._generatorSettings) this._generatorSettings.hass = scoped;
       for (const dialog of this._dialogRoot.children) dialog.hass = scoped;
       for (const notify of this._contextSubscribers) notify();
     }
@@ -139,8 +136,7 @@ class MlePanel extends HTMLElement {
       return;
     }
     this.shadowRoot.querySelector("select").value = location.id;
-    this.shadowRoot.querySelector("#generators").disabled = !location;
-    const key = `${location.id}:${settings}:${tab === "generators"}`;
+    const key = `${location.id}:${settings}:${tab}`;
     if (this._mountKey === key && this._child) {
       this._child.route = { prefix: `${ROOT}/${location.id}${settings ? "/configure" : ""}`, path: `/${tab}` };
       return;
@@ -148,25 +144,23 @@ class MlePanel extends HTMLElement {
     const prefs = await this._call("get_prefs", { location_id: location.id });
     if (revision !== this._renderRevision || !this.isConnected) return;
     this._main.replaceChildren(); this._dialogRoot.replaceChildren(); this._scope?.dispose();
+    this._generatorSettings = undefined;
     this._contextSubscribers.clear();
     this._scope = createLocationScope(this._hass, location.id);
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
-    if (tab === "generators") {
+    const generators = await this._call("generators/get", { location_id: location.id });
+    if (revision !== this._renderRevision || !this.isConnected) return;
+    if (!settings && generators.length && ["electricity", "overview", "now", "generators"].includes(tab)) {
       const child = document.createElement("mle-generators");
+      child.onconfigure = () => this._go(true);
+      if (tab === "now") child.mode = "now";
       this._mountKey = key; this._child = child; this._main.append(child);
       await child.configure(scopedHass, location.id, prefs);
       return;
     }
-    const generators = await this._call("generators/get", { location_id: location.id });
-    if (revision !== this._renderRevision || !this.isConnected) return;
-    if (generators.length && !settings && tab === "electricity") {
-      this._mountKey = undefined;
-      navigate(`${ROOT}/${location.id}/generators`);
-      return;
-    }
     if (generators.length && !settings) {
       const notice = document.createElement("div"); notice.className = "notice";
-      notice.textContent = "This native view excludes generator electricity. Open Generators for the complete grid, solar, generator, battery and load balance, including gas consumption and efficiency.";
+      notice.textContent = "Generator electricity and efficiency are included on the main Dashboard.";
       this._main.append(notice);
     }
     if (!settings && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
@@ -188,15 +182,30 @@ class MlePanel extends HTMLElement {
       const nativeSet = child._setLovelace.bind(child);
       child._setLovelace = async () => { await nativeSet(); if(child._lovelace) child._lovelace.urlPath = `energy-locations/${location.id}`; };
     } else {
+      const generatorSettings = document.createElement("mle-generators");
+      generatorSettings.settingsOnly = true;
+      generatorSettings.style.cssText = "display:block;max-width:600px;margin:0 auto 12px;padding:0";
+      this._generatorSettings = generatorSettings;
+      await generatorSettings.configure(scopedHass, location.id, prefs);
+      const attachGenerators = () => {
+        if (child.route?.path !== "/electricity") { generatorSettings.remove(); return; }
+        const content = child.shadowRoot?.querySelector(".content");
+        if (content && !content.contains(generatorSettings)) {
+          const battery = content.querySelector("ha-energy-battery-settings");
+          if (battery) battery.after(generatorSettings); else content.append(generatorSettings);
+        }
+      };
       const nativeUpdated = child.updated?.bind(child);
       child.updated = changed => {
         nativeUpdated?.(changed);
+        attachGenerators();
         const subpage = child.shadowRoot?.querySelector("hass-tabs-subpage");
         if (subpage) {
           subpage.tabs = subpage.tabs.map(item => ({ ...item, path: item.path.replace("/config/energy", `${ROOT}/${location.id}/configure`) }));
           subpage.setAttribute("back-path", `${ROOT}/${location.id}/electricity`);
         }
       };
+      child.updateComplete?.then(attachGenerators);
     }
     this._mountKey = key; this._child = child; this._main.append(child);
     this.shadowRoot.querySelector("#alert").textContent = "";
