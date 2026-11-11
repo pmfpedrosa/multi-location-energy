@@ -1,0 +1,12 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.11.0
+    container_name: mle-development
+    ports:
+      - "127.0.0.1:18123:8123"
+    volumes:
+      - ./config:/config
+      - ../custom_components/multi_location_energy:/config/custom_components/multi_location_energy:ro
+    environment:
+      TZ: Europe/Lisbon
+    restart: "no"

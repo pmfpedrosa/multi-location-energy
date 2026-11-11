@@ -1,0 +1,39 @@
+default_config:
+
+homeassistant:
+  name: Energy Locations Development
+  latitude: 38.72
+  longitude: -9.14
+  elevation: 30
+  unit_system: metric
+  currency: EUR
+  time_zone: Europe/Lisbon
+
+# Synthetic monotonically growing energy counters for an isolated test system.
+# They are not connected to either of the user's running HA instances.
+template:
+  - sensor:
+      - name: Demo Home A Grid Import
+        unique_id: mle_demo_home_a_grid_import
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ ((as_timestamp(now()) - as_timestamp('2026-01-01T00:00:00+00:00')) / 3600 * 0.7) | round(4) }}"
+      - name: Demo Home B Grid Import
+        unique_id: mle_demo_home_b_grid_import
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ ((as_timestamp(now()) - as_timestamp('2026-01-01T00:00:00+00:00')) / 3600 * 1.1) | round(4) }}"
+      - name: Demo Home A Grid Power
+        unique_id: mle_demo_home_a_grid_power
+        device_class: power
+        state_class: measurement
+        unit_of_measurement: W
+        state: "700"
+      - name: Demo Home B Grid Power
+        unique_id: mle_demo_home_b_grid_power
+        device_class: power
+        state_class: measurement
+        unit_of_measurement: W
+        state: "1100"

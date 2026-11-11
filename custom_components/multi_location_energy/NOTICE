@@ -1,0 +1,19 @@
+Multi-location Energy, 2026. Apache License 2.0.
+
+This product includes software developed by the Home Assistant contributors.
+Home Assistant Core: https://github.com/home-assistant/core
+Pinned release: 2026.11.0
+Home Assistant Frontend: https://github.com/home-assistant/frontend
+Reference release: 20261028.4 (as declared by Core 2026.11.0)
+
+Adapted Core files: data.py, helpers.py, sensor.py, validate.py, types.py.
+Changes: independent location managers and storage, location-namespaced cost
+and transform sensors, explicit manager lookup, task-local validation cost
+maps, config-entry sensor setup, durable saves and listener cleanup.
+tools/vendor_core.py reproduces the adaptations from retained upstream files.
+
+Native frontend components are loaded from the user's installed Home Assistant.
+They are not redistributed by the integration. Internal interfaces are isolated
+in frontend/native-loader.js and frontend/scope.js and require version testing.
+
+This is an independent community extension, not an official Home Assistant product.

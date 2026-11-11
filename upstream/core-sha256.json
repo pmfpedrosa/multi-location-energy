@@ -1,0 +1,12 @@
+{
+  "__init__.py": "08ec20728be6cbc3a2ed55b179ce4ca40278ed66ca63fe208898d0a7357ef4a1",
+  "const.py": "cedd8e0e5b5b077133e9b24232c5dbb5f1b937fbd16bf6864ec11f1272ea5d6c",
+  "data.py": "3ad2d1ae3ca4fdbd6f3aced373fdf3b6f32970e87b0cd17303ce71cc44a8ace6",
+  "helpers.py": "2a2060c2feeb3f46ecb8ffbc6d71cf787981c42068e267f4daef269a5dd20d76",
+  "manifest.json": "6bed5537c8f65117d1f364a2fbd7e5e924003253c0b5e84a928e9ca576964d1d",
+  "sensor.py": "a34991926185f77b05c0ec771003d758f82267707b1906be5068e3a41716c7e8",
+  "strings.json": "a18812d8c5182f9278972c22b5982817cc4ca47f4cb2a4e4bd2e606f537bcab9",
+  "types.py": "ff723ed7a437a3ebcd2698dbc4ab246552cf19fd0a5a365922ad1d63545c4028",
+  "validate.py": "c0a622c43cedd5a626a5405c5ee6e283b4c7af77ae69bedc5edc51b55d9accde",
+  "websocket_api.py": "76153198670be9a217d01bb8a6b2fc74de12f8dc2b34af3cb3ad8f2609f67a3e"
+}

@@ -1,0 +1,11 @@
+{
+  "domain": "multi_location_energy",
+  "name": "Multi-location Energy",
+  "version": "0.1.0",
+  "config_flow": true,
+  "dependencies": ["energy", "frontend", "panel_custom", "recorder", "websocket_api"],
+  "codeowners": [],
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "requirements": []
+}

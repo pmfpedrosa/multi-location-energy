@@ -1,0 +1,39 @@
+<!doctype html><meta charset="utf-8"><title>Energy Locations boundary test</title>
+<style>body{margin:0;font:14px Arial}mle-panel{height:100vh;--primary-text-color:#202b3a;--primary-background-color:#f4f6f8;--card-background-color:white;--divider-color:#ccd4df;--secondary-text-color:#526071;--error-color:#b00020}</style>
+<script type="module">
+  // Deliberate native component doubles. This tests panel wiring and isolation,
+  // not the actual Home Assistant renderer or its charts.
+  const prefs = label => ({energy_sources:[{type:'grid',stat_energy_from:'sensor.grid',name:label,cost_adjustment_day:0}],device_consumption:[],device_consumption_water:[]});
+  window.calls = [];
+  window.nativePrefs = prefs('Native');
+  window.locations = [{id:'a',name:'Home A'},{id:'b',name:'Home B'}];
+  window.preferences = {a:prefs('A'),b:prefs('B')};
+  class NativeEnergy extends HTMLElement {
+    async _setLovelace(){this._lovelace={urlPath:'energy'};}
+    connectedCallback(){ this.render(); }
+    async render(){await this._setLovelace();const value=await this.hass.callWS({type:'energy/get_prefs'});this.textContent='Dashboard: '+value.energy_sources[0]?.name;}
+  }
+  class NativeSettings extends HTMLElement {
+    connectedCallback(){
+      this.attachShadow({mode:'open'}).innerHTML='<h2>Native settings fixture</h2><button>Add grid fixture</button>';
+      this.shadowRoot.querySelector('button').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'fixture-energy-dialog',dialogImport:async()=>{},dialogParams:{}}}));
+    }
+  }
+  class EnergyDialog extends HTMLElement {
+    async showDialog(){this.innerHTML='<button>Save fixture</button>';this.querySelector('button').onclick=async()=>{await this.hass.callWS({type:'energy/save_prefs',...prefs('Updated')});this.dispatchEvent(new Event('dialog-closed'));};}
+  }
+  class Resolver extends HTMLElement {_getRoutes(){return{routes:{energy:{tag:'ha-panel-energy',load:async()=>{}},config:{load:async()=>{}}}};}}
+  class ConfigPanel extends HTMLElement {routerOptions={routes:{energy:{load:async()=>{}}}};}
+  customElements.define('ha-panel-energy',NativeEnergy);customElements.define('ha-config-energy',NativeSettings);customElements.define('fixture-energy-dialog',EnergyDialog);customElements.define('partial-panel-resolver',Resolver);customElements.define('ha-panel-config',ConfigPanel);
+  await import('/frontend/panel.js');
+  const hass={user:{is_admin:true},config:{version:'2026.11.0'},states:{},panels:{energy:{component_name:'energy'},config:{component_name:'config'}},connection:{},async callWS(msg){
+    window.calls.push(structuredClone(msg));
+    if(msg.type.startsWith('energy/')) throw Error('Global energy API was called');
+    if(msg.type.endsWith('locations/list'))return structuredClone(window.locations);
+    if(msg.type.endsWith('locations/create')){const item={id:'c',name:msg.name};window.locations.push(item);window.preferences.c={energy_sources:[],device_consumption:[],device_consumption_water:[]};return item;}
+    if(msg.type.endsWith('get_prefs'))return structuredClone(window.preferences[msg.location_id]);
+    if(msg.type.endsWith('save_prefs')){window.preferences[msg.location_id]={energy_sources:msg.energy_sources,device_consumption:msg.device_consumption,device_consumption_water:msg.device_consumption_water};return structuredClone(window.preferences[msg.location_id]);}
+    throw Error('Unexpected fixture command '+msg.type);
+  }};
+  const panel=document.createElement('mle-panel');panel.hass=hass;panel.panel={};panel.route={path:'/a/electricity',prefix:'/energy-locations'};document.body.append(panel);
+</script>

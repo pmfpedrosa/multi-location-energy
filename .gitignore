@@ -1,0 +1,15 @@
+.test-deps/
+test_dependencies/
+__pycache__/
+.pytest_cache/
+generated.json
+dist/
+.venv/
+node_modules/
+dev/config/.storage/
+dev/config/*.db*
+dev/config/*.log*
+dev/config/deps/
+dev/config/tts/
+dev/config/blueprints/
+dev/config/.HA_VERSION

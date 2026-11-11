@@ -1,0 +1,5 @@
+"""Integration constants."""
+DOMAIN = "multi_location_energy"
+VERSION = "0.1.0"
+PANEL_PATH = "energy-locations"
+FRONTEND_URL = "/multi_location_energy_static"

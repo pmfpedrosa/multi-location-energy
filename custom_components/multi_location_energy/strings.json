@@ -1,0 +1,7 @@
+{
+  "title": "Multi-location Energy",
+  "config": {
+    "step": {"user": {"title": "Energy Locations", "description": "Add independent energy configurations to this Home Assistant. Create and configure locations in the Energy Locations sidebar panel. This preview supports administrators only."}},
+    "abort": {"already_configured": "Energy Locations is already configured."}
+  }
+}
