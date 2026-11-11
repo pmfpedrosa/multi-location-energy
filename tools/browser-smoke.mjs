@@ -53,6 +53,10 @@ try {
   await page.getByRole('button',{name:'Now',exact:true}).click();
   await page.getByText('0.5 m³/h',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Configure generators',exact:true}).click();
+  for (const width of [1000,550,360]) {
+    await page.setViewportSize({width,height:900});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'Generator editor must fit long meter names');
+  }
   await page.getByLabel('Name',{exact:true}).first().fill('Test generator');
   await page.getByRole('button',{name:'Save generators',exact:true}).click();
   await page.waitForFunction(()=>window.saved.length===1);

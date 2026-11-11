@@ -4,7 +4,7 @@
 <script type="module">
 import '../frontend/generators.js';
 const states={};
-const meter=(id,value,unit)=>states[id]={entity_id:id,state:String(value),attributes:{unit_of_measurement:unit,state_class:'total_increasing',friendly_name:id}};
+const meter=(id,value,unit)=>states[id]={entity_id:id,state:String(value),attributes:{unit_of_measurement:unit,state_class:'total_increasing',friendly_name:id+" very long meter description".repeat(20)}};
 for(const [id,value] of [['solar',12],['g1',8],['g2',3],['import',5],['export',4],['charge',2],['discharge',2]])meter(`sensor.${id}`,value,'kWh');
 meter('sensor.gas1',2,'m³');meter('sensor.gas2',1,'m³');meter('sensor.power1',2000,'W');meter('sensor.flow1',0.5,'m³/h');
 window.saved=[];

@@ -1,6 +1,6 @@
-import { createLocationScope } from "./scope.js?v=0.2.0";
-import { loadNativeEnergy } from "./native-loader.js?v=0.2.0";
-import "./generators.js?v=0.2.0";
+import { createLocationScope } from "./scope.js?v=0.2.1";
+import { loadNativeEnergy } from "./native-loader.js?v=0.2.1";
+import "./generators.js?v=0.2.1";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
