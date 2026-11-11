@@ -6,12 +6,14 @@ from homeassistant.components import frontend, panel_custom
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import Platform, __version__ as HA_VERSION
 from homeassistant.exceptions import ConfigEntryError
+from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, FRONTEND_URL, PANEL_PATH, VERSION
 from .registry import LocationRegistry
 from . import websocket_api
 
 _LOGGER = logging.getLogger(__name__)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass, config):
