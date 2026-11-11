@@ -1,6 +1,6 @@
-import { createLocationScope } from "./scope.js?v=0.2.2";
-import { loadNativeEnergy } from "./native-loader.js?v=0.2.2";
-import "./generators.js?v=0.2.2";
+import { createLocationScope } from "./scope.js?v=0.2.3-beta.1";
+import { loadNativeEnergy } from "./native-loader.js?v=0.2.3-beta.1";
+import "./generators.js?v=0.2.3-beta.1";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -30,7 +30,7 @@ class MlePanel extends HTMLElement {
     this._locations = [];
     this._contextSubscribers = new Set();
     this.addEventListener("context-request", event => {
-      const keys = ["hassConnection", "connection", "hassApi", "hassInternationalization", "localize", "locale"];
+      const keys = ["hassConnection", "connection", "hassApi", "hassConfig", "hassUi", "hassInternationalization", "localize", "locale"];
       if (!keys.includes(event.context)) return;
       event.stopPropagation();
       if (!this._scope) return;
@@ -141,29 +141,24 @@ class MlePanel extends HTMLElement {
       this._child.route = { prefix: `${ROOT}/${location.id}${settings ? "/configure" : ""}`, path: `/${tab}` };
       return;
     }
-    const prefs = await this._call("get_prefs", { location_id: location.id });
+    const [prefs, generators] = await Promise.all([
+      this._call("get_prefs", { location_id: location.id }),
+      this._call("generators/get", { location_id: location.id }),
+    ]);
+    let extension;
+    if (!settings && generators.length) {
+      extension = await import("./native-extension.js?v=0.2.3-beta.1");
+      await extension.loadGeneratorExtension(this._hass);
+    }
     if (revision !== this._renderRevision || !this.isConnected) return;
     this._main.replaceChildren(); this._dialogRoot.replaceChildren(); this._scope?.dispose();
     this._generatorSettings = undefined;
     this._contextSubscribers.clear();
-    this._scope = createLocationScope(this._hass, location.id);
+    this._scope = createLocationScope(this._hass, location.id, {
+      name: location.name, generators: settings ? [] : generators,
+    });
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
-    const generators = await this._call("generators/get", { location_id: location.id });
-    if (revision !== this._renderRevision || !this.isConnected) return;
-    if (!settings && generators.length && ["electricity", "overview", "now", "generators"].includes(tab)) {
-      const child = document.createElement("mle-generators");
-      child.onconfigure = () => this._go(true);
-      if (tab === "now") child.mode = "now";
-      this._mountKey = key; this._child = child; this._main.append(child);
-      await child.configure(scopedHass, location.id, prefs);
-      return;
-    }
-    if (generators.length && !settings) {
-      const notice = document.createElement("div"); notice.className = "notice";
-      notice.textContent = "Generator electricity and efficiency are included on the main Dashboard.";
-      this._main.append(notice);
-    }
-    if (!settings && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
+    if (!settings && !generators.length && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
       this._mountKey = undefined; this._child = undefined;
       const content = document.createElement("div"); content.className = "message";
       const heading = document.createElement("h2"); heading.textContent = location.name;
@@ -180,7 +175,18 @@ class MlePanel extends HTMLElement {
     if (!settings) {
       child._navigateConfig = event => { event?.stopPropagation(); navigate(`${ROOT}/${location.id}/configure/${["gas", "water"].includes(tab) ? tab : "electricity"}`); };
       const nativeSet = child._setLovelace.bind(child);
-      child._setLovelace = async () => { await nativeSet(); if(child._lovelace) child._lovelace.urlPath = `energy-locations/${location.id}`; };
+      child.style.setProperty("--energy-generator-color", "#009688");
+      child._setLovelace = async () => {
+        // Initialize the extended collection before native code accesses its
+        // per-location cache. Native date controls then share that same data.
+        const config = extension ? await extension.generateGeneratorDashboard(
+          child.hass, generators, child._config?.hidden_cards, child.route?.path === "/now"
+        ) : undefined;
+        await nativeSet();
+        if(child._lovelace) child._lovelace = { ...child._lovelace,
+          ...(config ? { config, rawConfig: config } : {}),
+          urlPath: `energy-locations/${location.id}` };
+      };
     } else {
       const generatorSettings = document.createElement("mle-generators");
       generatorSettings.settingsOnly = true;

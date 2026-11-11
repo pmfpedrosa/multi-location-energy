@@ -2,6 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createLocationScope, scopedMessage } from "../frontend/scope.js";
 
+test("generator dashboard enrichment never changes stored or other-location preferences", async () => {
+  const prefs={energy_sources:[{type:"grid",stat_energy_from:"sensor.grid"}],device_consumption:[],device_consumption_water:[]};
+  const hass={connection:{},config:{location_name:"Native"},callWS:async()=>prefs};
+  const a=createLocationScope(hass,"a",{name:"Frestia_1",generators:[{id:"g",name:"Simulation",energy:"sensor.output"}]}).update(hass);
+  const b=createLocationScope(hass,"b",{name:"Frestia_2"}).update(hass);
+  assert.equal((await a.callWS({type:"energy/get_prefs"})).energy_sources[1].type,"generator");
+  assert.equal((await b.callWS({type:"energy/get_prefs"})).energy_sources.length,1);
+  assert.equal(prefs.energy_sources.length,1);
+  assert.equal(a.config.location_name,"Frestia_1");
+  assert.equal(b.config.location_name,"Frestia_2");
+  assert.equal(hass.config.location_name,"Native");
+});
+
 function fixture() {
   const calls = [];
   const connection = { _energy_dashboard: { prefs: { native: true } }, subscribeMessage: (...args) => { calls.push(args); return Promise.resolve(() => {}); }, addEventListener() { assert.equal(this, connection); } };

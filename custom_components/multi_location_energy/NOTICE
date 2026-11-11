@@ -12,8 +12,12 @@ and transform sensors, explicit manager lookup, task-local validation cost
 maps, config-entry sensor setup, durable saves and listener cleanup.
 tools/vendor_core.py reproduces the adaptations from retained upstream files.
 
-Native frontend components are loaded from the user's installed Home Assistant.
-They are not redistributed by the integration. Internal interfaces are isolated
-in frontend/native-loader.js and frontend/scope.js and require version testing.
+Native panels, configuration and shared controls are loaded from the user's
+installed Home Assistant. A generator-aware adaptation of the Energy cards,
+strategies and calculations is bundled from frontend commit
+a67b691a451e0b3fc469679b07158f963a61842c (20261028.4).
+tools/build-native.mjs records the adaptations; upstream/frontend-extension.json
+records source hashes. Bundled dependency licenses are in frontend/native-licenses.txt.
+Internal interfaces require testing against the installed frontend/Core version.
 
 This is an independent community extension, not an official Home Assistant product.

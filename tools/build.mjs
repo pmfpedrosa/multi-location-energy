@@ -6,8 +6,13 @@ const root = path.resolve(import.meta.dirname, "..");
 const target = path.join(root, "custom_components/multi_location_energy");
 fs.mkdirSync(path.join(target, "frontend"), { recursive: true });
 fs.mkdirSync(path.join(target, "translations"), { recursive: true });
-for (const file of ["panel.js", "scope.js", "native-loader.js", "generators.js", "generator-math.js"]) {
+for (const file of ["panel.js", "scope.js", "native-loader.js", "generators.js", "generator-math.js", "electricity-flows.js", "native-extension.js", "generator-details.js"]) {
   fs.copyFileSync(path.join(root, "frontend", file), path.join(target, "frontend", file));
+}
+for (const file of ["native-energy.js", "native-licenses.txt"]) {
+  const generated=path.join(root,"frontend",file),shipped=path.join(target,"frontend",file);
+  if(fs.existsSync(generated))fs.copyFileSync(generated,shipped);
+  else if(!fs.existsSync(shipped))throw new Error(`Build the native extension first: missing ${file}`);
 }
 fs.copyFileSync(path.join(target, "strings.json"), path.join(target, "translations/en.json"));
 const files = fs.readdirSync(path.join(root, "upstream/core")).sort();

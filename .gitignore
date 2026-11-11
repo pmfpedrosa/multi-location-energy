@@ -6,6 +6,9 @@ generated.json
 dist/
 .venv/
 node_modules/
+frontend/native-energy.js
+frontend/native-energy.js.map
+frontend/native-licenses.txt
 dev/config/.storage/
 dev/config/*.db*
 dev/config/*.log*
