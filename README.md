@@ -27,6 +27,23 @@ target, not a completed certification. See [validation status](docs/VALIDATION.m
 
 ## Install the preview
 
+### Through Home Assistant 2026.11 Marketplace
+
+1. Open **Settings → Marketplace → Add from link**.
+2. Enter `https://github.com/pmfpedrosa/multi-location-energy` and connect GitHub
+   if prompted. Select **Integration** if asked for a type.
+3. Open **Multi-location Energy**, select **Install**, and follow the setup
+   prompts. Restart if Home Assistant requests it.
+4. If setup does not open automatically, go to **Settings → Devices & services →
+   Add integration → Multi-location Energy**.
+5. Open **Energy Locations** in the sidebar and add your locations.
+
+This is a development preview; use a test instance first. Publishing checks appear
+in the repository's **Actions** tab. Passing those checks does not establish
+end-to-end compatibility with the native Energy dashboard.
+
+### Manual installation
+
 Use a test instance first. The release archive contains `multi_location_energy/`.
 
 1. Extract it into `/config/custom_components/`, resulting in
@@ -42,8 +59,8 @@ Use a test instance first. The release archive contains `multi_location_energy/`
 No access token needs to be entered into the panel. It uses the current Home
 Assistant administrator's authenticated session.
 
-This folder is prepared for a future HACS/Marketplace custom repository, but no
-repository has been published or submitted to a catalog.
+The project is hosted at [pmfpedrosa/multi-location-energy](https://github.com/pmfpedrosa/multi-location-energy).
+Add it by link; it has not been submitted to the Marketplace catalog.
 
 ## Design
 

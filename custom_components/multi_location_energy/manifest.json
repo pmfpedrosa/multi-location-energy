@@ -1,11 +1,13 @@
 {
   "domain": "multi_location_energy",
   "name": "Multi-location Energy",
-  "version": "0.1.0",
+  "codeowners": ["@pmfpedrosa"],
   "config_flow": true,
   "dependencies": ["energy", "frontend", "panel_custom", "recorder", "websocket_api"],
-  "codeowners": [],
+  "documentation": "https://github.com/pmfpedrosa/multi-location-energy",
   "integration_type": "service",
   "iot_class": "calculated",
-  "requirements": []
+  "issue_tracker": "https://github.com/pmfpedrosa/multi-location-energy/issues",
+  "requirements": [],
+  "version": "0.1.0"
 }
