@@ -3,7 +3,8 @@ let loading;
 export async function loadNativeEnergy(hass) {
   // Custom panels do not automatically load the native Settings translations.
   // Use HA's public loader, including when the selected language changes.
-  await Promise.all(["config", "energy"].map(fragment => hass.loadFragmentTranslation(fragment)));
+  await hass.loadFragmentTranslation("energy");
+  const localize = await hass.loadFragmentTranslation("config");
   loading ||= (async () => {
     if (!/^2026\.11\./.test(hass.config.version)) throw new Error("This preview requires Home Assistant 2026.11.x.");
     const resolver = document.createElement("partial-panel-resolver");
@@ -20,5 +21,6 @@ export async function loadNativeEnergy(hass) {
     await loadSettings();
     await Promise.all([customElements.whenDefined("ha-panel-energy"), customElements.whenDefined("ha-config-energy")]);
   })().catch(error => { loading = undefined; throw error; });
-  return loading;
+  await loading;
+  return localize;
 }

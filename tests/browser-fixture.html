@@ -17,7 +17,7 @@
   class NativeSettings extends HTMLElement {
     connectedCallback(){
       this.attachShadow({mode:'open'}).innerHTML='<h2>Native settings fixture</h2><button>Add grid fixture</button>';
-      this.shadowRoot.querySelector('button').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'fixture-energy-dialog',dialogImport:async()=>{},dialogParams:{}}}));
+      this.shadowRoot.querySelector('h2').textContent=this.hass.localize('test.settings');this.shadowRoot.querySelector('button').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'fixture-energy-dialog',dialogImport:async()=>{},dialogParams:{}}}));
     }
   }
   class EnergyDialog extends HTMLElement {
@@ -27,7 +27,7 @@
   class ConfigPanel extends HTMLElement {routerOptions={routes:{energy:{load:async()=>{}}}};}
   customElements.define('ha-panel-energy',NativeEnergy);customElements.define('ha-config-energy',NativeSettings);customElements.define('fixture-energy-dialog',EnergyDialog);customElements.define('partial-panel-resolver',Resolver);customElements.define('ha-panel-config',ConfigPanel);
   await import('/frontend/panel.js');
-  const hass={async loadFragmentTranslation(fragment){window.loadedFragments.push(fragment);},user:{is_admin:true},config:{version:'2026.11.0'},states:{},panels:{energy:{component_name:'energy'},config:{component_name:'config'}},connection:{},async callWS(msg){
+  const hass={localize(){return "";},async loadFragmentTranslation(fragment){window.loadedFragments.push(fragment);return key=>key === "test.settings" ? "Translated settings" : "";},user:{is_admin:true},config:{version:'2026.11.0'},states:{},panels:{energy:{component_name:'energy'},config:{component_name:'config'}},connection:{},async callWS(msg){
     window.calls.push(structuredClone(msg));
     if(msg.type.startsWith('energy/')) throw Error('Global energy API was called');
     if(msg.type.endsWith('locations/list'))return structuredClone(window.locations);

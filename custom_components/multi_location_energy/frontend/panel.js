@@ -1,5 +1,5 @@
-import { createLocationScope } from "./scope.js";
-import { loadNativeEnergy } from "./native-loader.js";
+import { createLocationScope } from "./scope.js?v=0.1.3";
+import { loadNativeEnergy } from "./native-loader.js?v=0.1.3";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -47,7 +47,7 @@ class MlePanel extends HTMLElement {
     const replacedConnection = this._hass && this._hass.connection !== hass.connection;
     this._hass = hass;
     if (this._scope) {
-      const scoped = this._scope.update(hass);
+      const scoped = this._scope.update(this._withTranslations(hass));
       if (this._child) this._child.hass = scoped;
       for (const dialog of this._dialogRoot.children) dialog.hass = scoped;
     }
@@ -55,6 +55,10 @@ class MlePanel extends HTMLElement {
     if (!this._started && this.isConnected) this._start();
   }
   get hass() { return this._hass; }
+  _withTranslations(hass) {
+    if (!this._nativeLocalize) return hass;
+    return { ...hass, localize: (...args) => hass.localize(...args) || this._nativeLocalize(...args) };
+  }
   set route(route) { this._route = route; if (this._started) this._onRoute(); }
   set narrow(narrow) { this._narrow = narrow; if (this._child) this._child.narrow = narrow; }
   set panel(panel) { this._panel = panel; }
@@ -79,7 +83,7 @@ class MlePanel extends HTMLElement {
     try {
       if (!this._hass.user?.is_admin) throw new Error("Administrator access is required for this preview.");
       await this._refreshLocations();
-      await loadNativeEnergy(this._hass);
+      this._nativeLocalize = await loadNativeEnergy(this._hass);
       await this._renderContent();
     } catch (error) { this._error(error); this._started = false; }
   }
@@ -123,7 +127,7 @@ class MlePanel extends HTMLElement {
     if (revision !== this._renderRevision || !this.isConnected) return;
     this._main.replaceChildren(); this._dialogRoot.replaceChildren(); this._scope?.dispose();
     this._scope = createLocationScope(this._hass, location.id);
-    const scopedHass = this._scope.update(this._hass);
+    const scopedHass = this._scope.update(this._withTranslations(this._hass));
     if (!settings && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
       this._mountKey = undefined; this._child = undefined;
       const content = document.createElement("div"); content.className = "message";
@@ -177,7 +181,7 @@ class MlePanel extends HTMLElement {
       const { dialogTag, dialogImport, dialogParams } = event.detail;
       if (dialogImport) await dialogImport();
       if (scope !== this._scope || !this.isConnected) return;
-      const dialog = document.createElement(dialogTag); dialog.hass = scope.update(this._hass);
+      const dialog = document.createElement(dialogTag); dialog.hass = scope.update(this._withTranslations(this._hass));
       dialog.addEventListener("dialog-closed", () => dialog.remove(), { once: true });
       this._dialogRoot.append(dialog);
       await dialog.showDialog(dialogParams);
