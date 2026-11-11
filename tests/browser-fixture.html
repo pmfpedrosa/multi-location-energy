@@ -6,6 +6,9 @@
   const prefs = label => ({energy_sources:[{type:'grid',stat_energy_from:'sensor.grid',name:label,cost_adjustment_day:0}],device_consumption:[],device_consumption_water:[]});
   window.calls = [];
   window.loadedFragments = [];
+  window.frontendPrefs = {a:{},b:{}};
+  window.escapedContexts = [];
+  document.addEventListener('context-request', event => window.escapedContexts.push(event.context));
   window.nativePrefs = prefs('Native');
   window.locations = [{id:'a',name:'Home A'},{id:'b',name:'Home B'}];
   window.preferences = {a:prefs('A'),b:prefs('B')};
@@ -21,7 +24,18 @@
     }
   }
   class EnergyDialog extends HTMLElement {
-    async showDialog(){this.innerHTML='<button>Save fixture</button>';this.querySelector('button').onclick=async()=>{await this.hass.callWS({type:'energy/save_prefs',...prefs('Updated')});this.dispatchEvent(new Event('dialog-closed'));};}
+    async showDialog(){
+      for (const context of ['hassConnection','hassApi','hassInternationalization','connection']) {
+        const event=new Event('context-request',{bubbles:true,composed:true});
+        event.context=context;event.subscribe=true;event.callback=value=>{this[context]=value;};this.dispatchEvent(event);
+      }
+      this.innerHTML='<button>Save fixture</button>';
+      this.querySelector('button').onclick=async()=>{
+        await this.hassApi.callWS({type:'energy/save_prefs',...prefs('Updated')});
+        await this.hassConnection.connection.sendMessagePromise({type:'frontend/set_system_data',key:'energy',value:{hidden_cards:['electricity.energy-grid-balance']}});
+        this.dispatchEvent(new Event('dialog-closed'));
+      };
+    }
   }
   class Resolver extends HTMLElement {_getRoutes(){return{routes:{energy:{tag:'ha-panel-energy',load:async()=>{}},config:{load:async()=>{}}}};}}
   class ConfigPanel extends HTMLElement {routerOptions={routes:{energy:{load:async()=>{}}}};}
@@ -34,6 +48,7 @@
     if(msg.type.endsWith('locations/create')){const item={id:'c',name:msg.name};window.locations.push(item);window.preferences.c={energy_sources:[],device_consumption:[],device_consumption_water:[]};return item;}
     if(msg.type.endsWith('get_prefs'))return structuredClone(window.preferences[msg.location_id]);
     if(msg.type.endsWith('save_prefs')){window.preferences[msg.location_id]={energy_sources:msg.energy_sources,device_consumption:msg.device_consumption,device_consumption_water:msg.device_consumption_water};return structuredClone(window.preferences[msg.location_id]);}
+    if(msg.type.endsWith('frontend/set')){window.frontendPrefs[msg.location_id]=structuredClone(msg.value);return null;}
     throw Error('Unexpected fixture command '+msg.type);
   }};
   const panel=document.createElement('mle-panel');panel.hass=hass;panel.panel={};panel.route={path:'/a/electricity',prefix:'/energy-locations'};document.body.append(panel);

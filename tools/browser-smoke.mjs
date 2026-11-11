@@ -34,6 +34,9 @@ try {
   await page.waitForFunction(()=>window.preferences.a.energy_sources[0].name==='Updated');
   assert.equal(await page.evaluate(()=>window.preferences.b.energy_sources[0].name),'B');
   assert.equal(await page.evaluate(()=>window.nativePrefs.energy_sources[0].name),'Native');
+  await page.waitForFunction(()=>window.frontendPrefs.a.hidden_cards?.length===1);
+  assert.deepEqual(await page.evaluate(()=>window.frontendPrefs.b),{});
+  assert.deepEqual(await page.evaluate(()=>window.escapedContexts),[]);
   await page.getByLabel("Location",{exact:true}).selectOption("b");
   await page.getByText("Dashboard: B",{exact:true}).waitFor();
   await page.getByRole("button",{name:"Add location",exact:true}).click();

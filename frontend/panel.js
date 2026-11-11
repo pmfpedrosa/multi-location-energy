@@ -1,5 +1,5 @@
-import { createLocationScope } from "./scope.js?v=0.1.3";
-import { loadNativeEnergy } from "./native-loader.js?v=0.1.3";
+import { createLocationScope } from "./scope.js?v=0.1.4";
+import { loadNativeEnergy } from "./native-loader.js?v=0.1.4";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -27,6 +27,20 @@ class MlePanel extends HTMLElement {
     this._main = this.shadowRoot.querySelector("main");
     this._dialogRoot = this.shadowRoot.querySelector("#dialogs");
     this._locations = [];
+    this._contextSubscribers = new Set();
+    this.addEventListener("context-request", event => {
+      const keys = ["hassConnection", "connection", "hassApi", "hassInternationalization", "localize", "locale"];
+      if (!keys.includes(event.context)) return;
+      event.stopPropagation();
+      if (!this._scope) return;
+      const notify = () => {
+        const scoped = this._scope.update(this._withTranslations(this._hass));
+        const value = ["connection", "localize", "locale"].includes(event.context) ? scoped[event.context] : scoped;
+        event.callback(value, () => this._contextSubscribers.delete(notify));
+      };
+      if (event.subscribe) this._contextSubscribers.add(notify);
+      notify();
+    });
     this._renderRevision = 0;
     this._onRoute = () => this._renderContent().catch(error => this._error(error));
     this.shadowRoot.querySelector("#locations").onchange = event => navigate(`${ROOT}/${event.target.value}/electricity`);
@@ -50,6 +64,7 @@ class MlePanel extends HTMLElement {
       const scoped = this._scope.update(this._withTranslations(hass));
       if (this._child) this._child.hass = scoped;
       for (const dialog of this._dialogRoot.children) dialog.hass = scoped;
+      for (const notify of this._contextSubscribers) notify();
     }
     if (replacedConnection && this._started) { this._mountKey = undefined; this._onRoute(); }
     if (!this._started && this.isConnected) this._start();
@@ -72,6 +87,7 @@ class MlePanel extends HTMLElement {
     window.removeEventListener("popstate", this._onRoute);
     this._main.replaceChildren();
     this._dialogRoot.replaceChildren();
+    this._contextSubscribers.clear();
     this._scope?.dispose();
     this._scope = undefined;
     this._child = undefined;
@@ -126,6 +142,7 @@ class MlePanel extends HTMLElement {
     const prefs = await this._call("get_prefs", { location_id: location.id });
     if (revision !== this._renderRevision || !this.isConnected) return;
     this._main.replaceChildren(); this._dialogRoot.replaceChildren(); this._scope?.dispose();
+    this._contextSubscribers.clear();
     this._scope = createLocationScope(this._hass, location.id);
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
     if (!settings && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
