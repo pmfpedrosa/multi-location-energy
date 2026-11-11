@@ -1,4 +1,4 @@
-import { total, periodEfficiency, efficiency, live, finite } from "./generator-math.js?v=0.2.3-beta.2";
+import { total, periodEfficiency, efficiency, live, finite } from "./generator-math.js?v=0.2.3-beta.3";
 const escape = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 
 /** Subscribes to the native date/compare collection; no independent date picker. */

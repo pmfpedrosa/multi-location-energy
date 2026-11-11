@@ -1,6 +1,6 @@
-import { createLocationScope } from "./scope.js?v=0.2.3-beta.2";
-import { loadNativeEnergy } from "./native-loader.js?v=0.2.3-beta.2";
-import "./generators.js?v=0.2.3-beta.2";
+import { createLocationScope } from "./scope.js?v=0.2.3-beta.3";
+import { loadNativeEnergy } from "./native-loader.js?v=0.2.3-beta.3";
+import "./generators.js?v=0.2.3-beta.3";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -47,6 +47,13 @@ class MlePanel extends HTMLElement {
     this.shadowRoot.querySelector("#locations").onchange = event => navigate(`${ROOT}/${event.target.value}/electricity`);
     this.shadowRoot.querySelector("#dashboard").onclick = () => this._go(false);
     this.shadowRoot.querySelector("#settings").onclick = () => this._go(true);
+    const generatorMenu = document.createElement("button");
+    generatorMenu.id = "generators"; generatorMenu.textContent = "Generators";
+    generatorMenu.onclick = () => {
+      const { location } = this._selection();
+      if (location) navigate(`${ROOT}/${location.id}/generators`);
+    };
+    this.shadowRoot.querySelector("#settings").after(generatorMenu);
     this.shadowRoot.querySelector("#create").onclick = () => this._nameDialog(false);
     this.shadowRoot.querySelector("#rename").onclick = () => this._nameDialog(true);
     this.shadowRoot.querySelector("#cancel").onclick = () => this.shadowRoot.querySelector("dialog").close();
@@ -137,7 +144,7 @@ class MlePanel extends HTMLElement {
     if (!this._hass || !this._started || !customElements.get("ha-panel-energy")) return;
     const revision = ++this._renderRevision;
     const { location, settings, tab } = this._selection();
-    for (const id of ["settings", "dashboard", "rename"]) this.shadowRoot.querySelector(`#${id}`).disabled = !location;
+    for (const id of ["settings", "dashboard", "rename", "generators"]) this.shadowRoot.querySelector(`#${id}`).disabled = !location;
     if (!location) {
       this._main.innerHTML = '<div class="message"><h2>Independent energy dashboards for every location</h2><p>Add a location, then select its grid, solar, battery, gas, water and device measurements in Configure.</p></div>';
       return;
@@ -153,8 +160,8 @@ class MlePanel extends HTMLElement {
       this._call("generators/get", { location_id: location.id }),
     ]);
     let extension;
-    if (!settings && generators.length) {
-      extension = await import("./native-extension.js?v=0.2.3-beta.2");
+    if (!settings && tab !== "generators" && generators.length) {
+      extension = await import("./native-extension.js?v=0.2.3-beta.3");
       await extension.loadGeneratorExtension(this._hass);
     }
     if (revision !== this._renderRevision || !this.isConnected) return;
@@ -162,9 +169,18 @@ class MlePanel extends HTMLElement {
     this._generatorSettings = undefined;
     this._contextSubscribers.clear();
     this._scope = createLocationScope(this._hass, location.id, {
-      name: location.name, generators: settings ? [] : generators,
+      name: location.name, generators: settings || tab === "generators" ? [] : generators,
     });
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
+    if (tab === "generators") {
+      const editor = document.createElement("mle-generators");
+      editor.settingsOnly = true;
+      this._mountKey = key; this._child = editor;
+      this._main.append(editor);
+      await editor.configure(scopedHass, location.id, prefs);
+      this.shadowRoot.querySelector("#alert").textContent = "";
+      return;
+    }
     if (!settings && !generators.length && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
       this._mountKey = undefined; this._child = undefined;
       const content = document.createElement("div"); content.className = "message";
@@ -206,30 +222,15 @@ class MlePanel extends HTMLElement {
         }
       };
     } else {
-      const generatorSettings = document.createElement("mle-generators");
-      generatorSettings.settingsOnly = true;
-      generatorSettings.style.cssText = "display:block;max-width:600px;margin:0 auto 12px;padding:0";
-      this._generatorSettings = generatorSettings;
-      await generatorSettings.configure(scopedHass, location.id, prefs);
-      const attachGenerators = () => {
-        if (child.route?.path !== "/electricity") { generatorSettings.remove(); return; }
-        const content = child.shadowRoot?.querySelector(".content");
-        if (content && !content.contains(generatorSettings)) {
-          const battery = content.querySelector("ha-energy-battery-settings");
-          if (battery) battery.after(generatorSettings); else content.append(generatorSettings);
-        }
-      };
       const nativeUpdated = child.updated?.bind(child);
       child.updated = changed => {
         nativeUpdated?.(changed);
-        attachGenerators();
         const subpage = child.shadowRoot?.querySelector("hass-tabs-subpage");
         if (subpage) {
           subpage.tabs = subpage.tabs.map(item => ({ ...item, path: item.path.replace("/config/energy", `${ROOT}/${location.id}/configure`) }));
           subpage.setAttribute("back-path", `${ROOT}/${location.id}/electricity`);
         }
       };
-      child.updateComplete?.then(attachGenerators);
     }
     this._mountKey = key; this._child = child; this._main.append(child);
     this.shadowRoot.querySelector("#alert").textContent = "";

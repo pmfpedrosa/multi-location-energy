@@ -1,6 +1,6 @@
 /** Per-instance native dashboard extension. Never modifies HA's global classes. */
-import * as native from "./native-energy.js?v=0.2.3-beta.2";
-import { registerGeneratorDetails } from "./generator-details.js?v=0.2.3-beta.2";
+import * as native from "./native-energy.js?v=0.2.3-beta.3";
+import { registerGeneratorDetails } from "./generator-details.js?v=0.2.3-beta.3";
 
 const extendedCards = ["energy-distribution", "energy-usage-graph", "energy-sources-table",
   "energy-sankey", "energy-self-sufficiency-gauge", "energy-carbon-consumed-gauge",
