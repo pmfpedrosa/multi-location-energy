@@ -11,7 +11,7 @@
   class NativeEnergy extends HTMLElement {
     async _setLovelace(){this._lovelace={urlPath:'energy'};}
     connectedCallback(){ this.render(); }
-    async render(){await this._setLovelace();const value=await this.hass.callWS({type:'energy/get_prefs'});this.textContent='Dashboard: '+value.energy_sources[0]?.name;}
+    async render(){await this._setLovelace();const value=await this.hass.callWS({type:'energy/get_prefs'});this.attachShadow({mode:'open'}).innerHTML='<style>header{position:fixed;top:0;left:0;right:0;height:64px;background:white;z-index:10}</style><header>Native toolbar</header><p style="padding-top:64px">Dashboard: '+value.energy_sources[0]?.name+'</p>';}
   }
   class NativeSettings extends HTMLElement {
     connectedCallback(){

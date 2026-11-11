@@ -23,6 +23,9 @@ try {
   const errors=[];page.on("pageerror",error=>errors.push(error.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/energy-locations/a/electricity`);
   await page.getByText("Dashboard: A",{exact:true}).waitFor();
+  const selector = await page.getByLabel("Location",{exact:true}).boundingBox();
+  const nativeToolbar = await page.getByText("Native toolbar",{exact:true}).boundingBox();
+  assert.ok(nativeToolbar.y >= selector.y + selector.height, "Native fixed toolbar must stay below location controls");
   await page.getByRole("button",{name:"Configure",exact:true}).click();
   await page.getByRole("button",{name:"Add grid fixture"}).click();
   await page.getByRole("button",{name:"Save fixture"}).click();

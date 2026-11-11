@@ -18,7 +18,7 @@ class MlePanel extends HTMLElement {
       header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--divider-color);flex-wrap:wrap}
       h1{font-size:20px;margin:0 auto 0 0}select,input,button{font:inherit;color:inherit;background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:8px;padding:9px 12px}
       button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}.message{padding:20px;max-width:780px;margin:0 auto;line-height:1.6}
-      .error{color:var(--error-color)}main{flex:1;min-height:0;overflow:auto}main>ha-panel-energy,main>ha-config-energy{display:block;min-height:100%}
+      .error{color:var(--error-color)}main{flex:1;min-height:0;overflow:auto;position:relative;contain:layout paint}main>ha-panel-energy,main>ha-config-energy{display:block;min-height:100%}
       .notice{padding:6px 16px;font-size:12px;color:var(--secondary-text-color);border-bottom:1px solid var(--divider-color)}
       #alert:empty{display:none}#alert{padding:12px 16px}dialog{background:var(--card-background-color);color:inherit;border:1px solid var(--divider-color);border-radius:12px;max-width:420px}dialog input{display:block;margin:16px 0;width:90%}.actions{display:flex;gap:8px;justify-content:flex-end}
     </style><header><ha-icon-button id="menu"></ha-icon-button><h1>Energy Locations</h1><select id="locations" aria-label="Location"></select><button id="dashboard">Dashboard</button><button id="settings">Configure</button><button id="rename">Rename</button><button id="create">Add location</button></header>
