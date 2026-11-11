@@ -1,6 +1,6 @@
-# Unpublished generator dashboard test build
+# Generator dashboard beta validation
 
-Version: 0.2.3-beta.1. This is not a published Marketplace update.
+Version: 0.2.3-beta.2. Beta 1 was published and installed through Marketplace.
 
 The native Energy panel is retained for both locations. For locations with
 generators, isolated adaptations of the native cards and calculations add a
@@ -40,7 +40,11 @@ the original Energy dashboard. Confirm no frontend errors. Check all values
 against Recorder for the same period. Do not call simulated efficiency a real
 generator measurement.
 
-No live installation or restart has been performed for this build.
+Beta 1 was installed through Marketplace and Home Assistant restarted. Frestia_1
+retained its generator settings but rendered the ordinary grid-only dashboard.
+Frestia_2 retained its native solar, battery and grid dashboard. Stable publication
+is withheld. Beta 2 corrects intermediate native dashboard publication and
+translation identity changes on sensor updates; live revalidation is pending.
 
 ## Rebuilding the native adaptation
 

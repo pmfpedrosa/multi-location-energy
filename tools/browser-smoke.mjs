@@ -48,6 +48,21 @@ try {
   assert.equal(await page.evaluate(()=>window.locations.at(-1).name),'Home C');
   assert.equal(await page.evaluate(()=>window.calls.some(call=>call.type.startsWith('energy/'))),false);
   assert.deepEqual(errors,[]);
+  // Explicit extension double: test atomic panel publication, not card math.
+  await page.route('**/frontend/native-extension.js?*', route=>route.fulfill({
+    contentType:'text/javascript',body:'export async function loadGeneratorExtension(){};export async function generateGeneratorDashboard(){return {views:[{path:"electricity",cards:[{type:"custom:generator-fixture"}]}]};}',
+  }));
+  await page.evaluate(()=>{
+    window.fixtureGenerators.a=[{id:'g',name:'Generator',energy:'sensor.generated'}];
+    window.publishedDashboards=[];
+    const panel=document.querySelector('mle-panel');
+    const initial=panel._withTranslations(panel.hass).localize;
+    window.translationStable=panel._withTranslations({...panel.hass,states:{changed:{}}}).localize===initial;
+  });
+  await page.getByLabel('Location',{exact:true}).selectOption('a');
+  await page.getByText('Dashboard: Updated',{exact:true}).waitFor();
+  assert.equal(await page.evaluate(()=>window.translationStable),true,'Sensor updates must not trigger a language-change dashboard rebuild');
+  assert.deepEqual(await page.evaluate(()=>window.publishedDashboards.map(value=>value.config?.views[0].cards[0].type)),['custom:generator-fixture'],'Only the final generator config may reach the native view renderer');
   await page.goto(`http://127.0.0.1:${server.address().port}/generators-fixture`);
   await page.waitForFunction(()=>window.ready);
   await page.getByText('24 kWh',{exact:true}).waitFor();

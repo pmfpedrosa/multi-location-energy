@@ -1,6 +1,6 @@
-import { createLocationScope } from "./scope.js?v=0.2.3-beta.1";
-import { loadNativeEnergy } from "./native-loader.js?v=0.2.3-beta.1";
-import "./generators.js?v=0.2.3-beta.1";
+import { createLocationScope } from "./scope.js?v=0.2.3-beta.2";
+import { loadNativeEnergy } from "./native-loader.js?v=0.2.3-beta.2";
+import "./generators.js?v=0.2.3-beta.2";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -74,7 +74,14 @@ class MlePanel extends HTMLElement {
   get hass() { return this._hass; }
   _withTranslations(hass) {
     if (!this._nativeLocalize) return hass;
-    return { ...hass, localize: (...args) => hass.localize(...args) || this._nativeLocalize(...args) };
+    // The native panel rebuilds its dashboard when localize changes identity.
+    // Sensor updates must not look like a language change.
+    if (this._localizeSource !== hass.localize || this._localizeFallback !== this._nativeLocalize) {
+      this._localizeSource = hass.localize;
+      this._localizeFallback = this._nativeLocalize;
+      this._scopedLocalize = (...args) => this._localizeSource(...args) || this._localizeFallback(...args);
+    }
+    return { ...hass, localize: this._scopedLocalize };
   }
   set route(route) { this._route = route; if (this._started) this._onRoute(); }
   set narrow(narrow) { this._narrow = narrow; if (this._child) this._child.narrow = narrow; }
@@ -147,7 +154,7 @@ class MlePanel extends HTMLElement {
     ]);
     let extension;
     if (!settings && generators.length) {
-      extension = await import("./native-extension.js?v=0.2.3-beta.1");
+      extension = await import("./native-extension.js?v=0.2.3-beta.2");
       await extension.loadGeneratorExtension(this._hass);
     }
     if (revision !== this._renderRevision || !this.isConnected) return;
@@ -182,10 +189,21 @@ class MlePanel extends HTMLElement {
         const config = extension ? await extension.generateGeneratorDashboard(
           child.hass, generators, child._config?.hidden_cards, child.route?.path === "/now"
         ) : undefined;
-        await nativeSet();
-        if(child._lovelace) child._lovelace = { ...child._lovelace,
-          ...(config ? { config, rawConfig: config } : {}),
-          urlPath: `energy-locations/${location.id}` };
+        if (config) {
+          // Publish only the final config. Publishing native strategy views first
+          // lets hui-root start an asynchronous native view which can win the race.
+          child._lovelace = {
+            config, rawConfig: config, editMode: false,
+            urlPath: `energy-locations/${location.id}`, mode: "generated",
+            locale: child.hass.locale, enableFullEditMode: () => undefined,
+            saveConfig: async () => undefined, deleteConfig: async () => undefined,
+            setEditMode: () => child._navigateConfig(), showToast: () => undefined,
+          };
+        } else {
+          await nativeSet();
+          if(child._lovelace) child._lovelace = { ...child._lovelace,
+            urlPath: `energy-locations/${location.id}` };
+        }
       };
     } else {
       const generatorSettings = document.createElement("mle-generators");

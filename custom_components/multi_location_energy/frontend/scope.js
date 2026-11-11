@@ -1,5 +1,5 @@
 /** Location adapter for HA 2026.11 native energy components. Apache-2.0. */
-import { withGeneratorSources } from "./electricity-flows.js?v=0.2.3-beta.1";
+import { withGeneratorSources } from "./electricity-flows.js?v=0.2.3-beta.2";
 const DOMAIN = "multi_location_energy";
 const ENERGY_COMMANDS = new Set(["get_prefs", "save_prefs", "info", "validate", "solar_forecast"]);
 

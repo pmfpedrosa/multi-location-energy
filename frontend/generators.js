@@ -1,4 +1,4 @@
-import {total, efficiency, periodEfficiency, live, add, balance, finite} from './generator-math.js?v=0.2.3-beta.1';
+import {total, efficiency, periodEfficiency, live, add, balance, finite} from './generator-math.js?v=0.2.3-beta.2';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = (value, unit) => finite(value) ? `${new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(value)} ${unit}` : 'Unavailable';
