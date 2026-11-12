@@ -4,14 +4,17 @@ An initial custom integration targeting **Home Assistant 2026.11.x**. It provide
 **Energy Locations** sidebar panel with independent configurations for each home,
 using the installed Home Assistant native Energy dashboard and setup components.
 
-**Status: 0.2.4 rollback release.** Restores the application from v0.1.4,
-before generator support was added, with a newer version number for Marketplace.
-Each location uses the native Energy dashboard. The generator menu, generator
-configuration and generator dashboard replacement are removed. Existing location
-preferences and Recorder history are retained. Stored generator settings are
-ignored by this version. See [validation status](docs/VALIDATION.md).
+**Status: 0.3.0-beta.1.** Adds reusable Location Energy cards to the pre-generator
+application restored in v0.2.4. Each location uses the native Energy dashboard.
+Existing location preferences and Recorder history are retained. Stored generator
+settings are ignored. See [card setup](docs/LOCATION-CARDS.md) and
+[validation status](docs/VALIDATION.md).
 
 ## What is implemented
+
+- Reusable **Location Energy** cards for custom dashboards, with a visual location
+  selector and shared or independent date groups. See [card setup and a combined
+  Frestia_1/Frestia_2 example](docs/LOCATION-CARDS.md).
 
 - Create and rename locations; immutable generated IDs keep history stable.
 - Independent native-format energy preferences and dashboard card visibility.
@@ -116,8 +119,8 @@ energy settings. Updates within 2026.11 still need compatibility checks.
   tariffs cannot be reconstructed from today's price.
 - Summing sites is not implemented. A shared upstream meter and its downstream
   submeters must not be blindly added together.
-- Other native Energy cards elsewhere in your dashboards continue to use the
-  native Energy configuration. Location support currently lives in this panel.
+- Ordinary native Energy cards use the native Energy configuration. Use the
+  Location Energy wrapper to select a location on a custom dashboard.
 
 ## Development
 

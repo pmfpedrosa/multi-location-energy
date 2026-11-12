@@ -6,7 +6,7 @@ const root = path.resolve(import.meta.dirname, "..");
 const target = path.join(root, "custom_components/multi_location_energy");
 fs.mkdirSync(path.join(target, "frontend"), { recursive: true });
 fs.mkdirSync(path.join(target, "translations"), { recursive: true });
-for (const file of ["panel.js", "scope.js", "native-loader.js"]) {
+for (const file of ["panel.js", "scope.js", "native-loader.js", "card-scope.js", "location-card.js", "location-card-editor.js"]) {
   fs.copyFileSync(path.join(root, "frontend", file), path.join(target, "frontend", file));
 }
 fs.copyFileSync(path.join(target, "strings.json"), path.join(target, "translations/en.json"));

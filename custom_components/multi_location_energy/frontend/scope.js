@@ -21,7 +21,7 @@ export function scopedMessage(message, locationId) {
   return message;
 }
 
-export function createLocationScope(initialHass, locationId) {
+export function createLocationScope(initialHass, locationId, options = {}) {
   let current = initialHass;
   const cache = Object.create(null);
   const listeners = new Set();
@@ -58,7 +58,11 @@ export function createLocationScope(initialHass, locationId) {
       const value = current.connection[key];
       return typeof value === "function" ? value.bind(current.connection) : value;
     },
-    set(_target, key, value) { cache[key] = value; return true; },
+    set(_target, key, value) {
+      cache[key] = value;
+      if (typeof key === "string" && key.startsWith("_energy")) options.onCollection?.(key, value);
+      return true;
+    },
     deleteProperty(_target, key) { delete cache[key]; return true; },
     has(_target, key) { return Object.hasOwn(cache, key) || (typeof key !== "string" || !key.startsWith("_energy")) && key in current.connection; },
   });
@@ -72,6 +76,7 @@ export function createLocationScope(initialHass, locationId) {
           if (key === "callWS") return dispatch;
           if (key === "connection") return connection;
           if (key === "panelUrl") return `energy-locations/${locationId}`;
+          if (key === "config" && options.name) return { ...target.config, location_name: options.name };
           return Reflect.get(target, key);
         },
       });

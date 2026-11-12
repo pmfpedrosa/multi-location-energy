@@ -1,0 +1,60 @@
+<!doctype html><meta charset="utf-8"><title>Multi-location reusable cards boundary test</title>
+<style>body{font:14px Arial;--primary-text-color:#212121;--divider-color:#ccc;--card-background-color:#fff;--error-color:#b00020}#cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}</style>
+<div id="cards"></div>
+<script type="module">
+window.calls=[];window.escapeContexts=[];
+document.addEventListener('context-request',event=>window.escapeContexts.push(event.context));
+const prefs={a:{energy_sources:[{type:'grid',stat_energy_from:'sensor.a_import'}]},b:{energy_sources:[{type:'grid',stat_energy_from:'sensor.b_import'},{type:'solar',stat_energy_from:'sensor.b_solar'},{type:'battery',stat_energy_from:'sensor.b_discharge'}]}};
+window.hass={user:{id:'admin',is_admin:true},config:{version:'2026.11.0',location_name:'Native Home'},panelUrl:'test-dashboard',states:{},entities:{},connection:{_energy_dashboard:{native:true}},locale:{language:'en'},async callWS(message){
+ window.calls.push(structuredClone(message));
+ if(message.type==='multi_location_energy/locations/list')return [{id:'a',name:'Frestia_1'},{id:'b',name:'Frestia_2'}];
+ if(message.type==='multi_location_energy/get_prefs')return structuredClone(prefs[message.location_id]);
+ if(message.type==='energy/get_prefs')throw Error('Native global preferences leaked');
+ if(message.type==='recorder/statistics_during_period')return message.statistic_ids[0]==='sensor.a_import'?.56:33.77;
+ throw Error('Unexpected call '+message.type);
+}};
+class NativeCard extends HTMLElement {
+ constructor(){super();this.attachShadow({mode:'open'});this.contexts={};}
+ setConfig(config){this.config=config;}
+ set hass(value){this._hass=value;this.render();}
+ connectedCallback(){
+  for(const context of ['hassConnection','hassApi','hassConfig','hassUi','hassInternationalization']){
+   const event=new Event('context-request',{bubbles:true,composed:true});event.context=context;event.subscribe=true;
+   event.callback=(value,unsub)=>{this.contexts[context]=value;};this.dispatchEvent(event);
+  }
+  const api=this.contexts.hassApi,connection=this.contexts.hassConnection.connection,key='_'+this.config.collection_key;
+  let collection=connection[key];
+  if(!collection){
+   const callbacks=new Set();collection={start:new Date('2026-11-12T00:00:00Z'),end:new Date('2026-11-12T23:59:59Z'),compare:0,prefs:undefined,
+    setPeriod(start,end){this.start=start;this.end=end;},setCompare(value){this.compare=value;},isActive(){return callbacks.size>0;},
+    subscribe(callback){callbacks.add(callback);return()=>callbacks.delete(callback);},
+    async refresh(){this.prefs=await api.callWS({type:'energy/get_prefs'});for(const cb of callbacks)cb();}
+   };
+   connection[key]=collection;
+  }
+  this.collection=collection;
+  this.unsubscribe=collection.subscribe(()=>this.render());
+  this.load();
+ }
+ async load(){
+  const prefs=await this.contexts.hassApi.callWS({type:'energy/get_prefs'});
+  this.collection.prefs=prefs;
+  this.value=await this.contexts.hassApi.callWS({type:'recorder/statistics_during_period',statistic_ids:prefs.energy_sources.map(s=>s.stat_energy_from)});
+  this.render();
+ }
+ disconnectedCallback(){this.unsubscribe?.();}
+ render(){
+  if(!this.collection||!this._hass)return;
+  this.shadowRoot.innerHTML='<article><h2></h2><p></p><button>Previous</button><button>Compare</button></article>';
+  this.shadowRoot.querySelector('h2').textContent=this.config.title||this.config.type;
+  this.shadowRoot.querySelector('p').textContent=`${this._hass.config.location_name}: ${this.value} kWh · ${this.collection.start.toISOString().slice(0,10)} · compare ${this.collection.compare}`;
+  this.shadowRoot.querySelectorAll('button')[0].onclick=()=>{this.collection.setPeriod(new Date(this.collection.start.getTime()-86400000),this.collection.end);this.collection.refresh();};
+  this.shadowRoot.querySelectorAll('button')[1].onclick=()=>{this.collection.setCompare(1);this.collection.refresh();};
+ }
+}
+for(const type of ['energy-distribution','energy-date-selection','energy-sources-table'])customElements.define('hui-'+type+'-card',class extends NativeCard{});
+window.loadCardHelpers=async()=>({createCardElement(config){const card=document.createElement('hui-'+config.type+'-card');card.setConfig(config);return card;}});
+await import('/frontend/location-card.js');
+window.addCard=(location,type='energy-distribution',group)=>{const card=document.createElement('multi-location-energy-card');card.setConfig({type:'custom:multi-location-energy-card',location_id:location,card_type:type,...(group?{date_group:group}:{})});card.hass=window.hass;document.querySelector('#cards').append(card);return card;};
+window.a=addCard('a');window.b=addCard('b');window.date=addCard('a','energy-date-selection');window.independent=addCard('b','energy-distribution','separate');window.ready=true;
+</script>

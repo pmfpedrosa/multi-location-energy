@@ -39,6 +39,9 @@ async def async_setup_entry(hass, entry):
             websocket_api.async_setup(hass)
             runtime["ws_registered"] = True
         await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR])
+        if not runtime.get("cards_registered"):
+            frontend.add_extra_js_url(hass, f"{FRONTEND_URL}/location-card.js?v={VERSION}")
+            runtime["cards_registered"] = True
         await panel_custom.async_register_panel(
             hass,
             webcomponent_name="mle-panel",
