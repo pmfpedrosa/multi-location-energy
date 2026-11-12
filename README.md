@@ -4,7 +4,7 @@ An initial custom integration targeting **Home Assistant 2026.11.x**. It provide
 **Energy Locations** sidebar panel with independent configurations for each home,
 using the installed Home Assistant native Energy dashboard and setup components.
 
-**Status: 0.3.0-beta.1.** Adds reusable Location Energy cards to the pre-generator
+**Status: 0.3.0-beta.2.** Adds reusable Location Energy cards to the pre-generator
 application restored in v0.2.4. Each location uses the native Energy dashboard.
 Existing location preferences and Recorder history are retained. Stored generator
 settings are ignored. See [card setup](docs/LOCATION-CARDS.md) and

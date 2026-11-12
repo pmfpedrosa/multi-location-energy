@@ -1,5 +1,5 @@
 /** Shared native collections for reusable cards. Preferences never leave a location. */
-import { createLocationScope } from "./scope.js?v=0.3.0-beta.1";
+import { createLocationScope } from "./scope.js?v=0.3.0-beta.2";
 
 const connections = new WeakMap();
 const encode = value => Array.from(new TextEncoder().encode(value), byte => byte.toString(16).padStart(2, "0")).join("");
@@ -47,7 +47,9 @@ export function acquireCardScope(hass, location, groupName) {
       };
       // A card added after a date selection must start on that same range.
       if (group.selection.period) period(...group.selection.period);
+      else group.selection.period = [new Date(collection.start), collection.end ? new Date(collection.end) : undefined];
       if (group.selection.compare) compare(...group.selection.compare);
+      else group.selection.compare = [collection.compare];
     };
     entry.scope = createLocationScope(hass, location.id, { name: location.name, onCollection: attach });
     group.entries.set(location.id, entry);

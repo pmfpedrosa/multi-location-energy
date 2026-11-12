@@ -42,6 +42,14 @@ test("shared dates and comparison synchronize without mixing data, including lat
   a.release();b.release();late.release();
 });
 
+test("the first group collection establishes the initial range even before interaction", () => {
+  const source=hass(), a=acquireCardScope(source,{id:"a",name:"A"},"initial"), b=acquireCardScope(source,{id:"b",name:"B"},"initial");
+  const ca=collection(), cb=collection(); ca.start=new Date("2026-11-01");ca.end=new Date("2026-11-07");ca.compare=1;
+  attach(a,source,ca);attach(b,source,cb);
+  assert.equal(cb.start.getTime(),ca.start.getTime());assert.equal(cb.end.getTime(),ca.end.getTime());assert.equal(cb.compare,1);
+  a.release();b.release();
+});
+
 test("independent date groups and real HA connections remain isolated", () => {
   const source=hass(), other=hass();
   const a=acquireCardScope(source,{id:"a",name:"A"},"one"), b=acquireCardScope(source,{id:"b",name:"B"},"two"), c=acquireCardScope(other,{id:"a",name:"A"},"one");

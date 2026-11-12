@@ -89,4 +89,10 @@ Automated checks cover per-location routing, independent native collection
 state, shared and independent dates/comparisons, late-mounted cards, lifecycle,
 configuration changes, visual editor controls and denied/unknown locations.
 The browser boundary fixture deliberately doubles native card components; it
-does not certify native rendering. Live acceptance is tracked separately.
+does not certify native rendering. Live beta testing additionally verified both
+distribution cards on Energy Overview, shared previous-day navigation and the
+visual editor's location/type selectors with a native Frestia_2 sources table.
+Frestia_1 showed 4.35 kWh and Frestia_2 37.9 kWh on 11 November, consistent with
+the separate location dashboard and Recorder checks. No source preferences were
+changed. This does not certify every native card option or fix the existing
+blank Configure panel.

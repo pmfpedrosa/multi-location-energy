@@ -1,4 +1,4 @@
-import { CARD_TYPES, getLocations } from "./location-card.js?v=0.3.0-beta.1";
+import { CARD_TYPES, getLocations } from "./location-card.js?v=0.3.0-beta.2";
 
 class LocationCardEditor extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: "open" }); this._locations = []; }

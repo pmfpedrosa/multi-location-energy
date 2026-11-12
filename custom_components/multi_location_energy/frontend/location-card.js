@@ -1,5 +1,5 @@
 /** Wraps installed native HA cards with an explicitly location-scoped context. */
-import { acquireCardScope } from "./card-scope.js?v=0.3.0-beta.1";
+import { acquireCardScope } from "./card-scope.js?v=0.3.0-beta.2";
 
 export const CARD_TYPES = [
   "energy-distribution", "energy-date-selection", "energy-usage-graph",
@@ -64,7 +64,7 @@ export class MultiLocationEnergyCard extends HTMLElement {
     });
   }
   static async getConfigElement() {
-    await import("./location-card-editor.js?v=0.3.0-beta.1");
+    await import("./location-card-editor.js?v=0.3.0-beta.2");
     return document.createElement("multi-location-energy-card-editor");
   }
   static async getStubConfig(hass) {
