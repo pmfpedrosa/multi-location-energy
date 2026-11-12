@@ -1,5 +1,4 @@
 /** Location adapter for HA 2026.11 native energy components. Apache-2.0. */
-import { withGeneratorSources } from "./electricity-flows.js?v=0.2.3-beta.3";
 const DOMAIN = "multi_location_energy";
 const ENERGY_COMMANDS = new Set(["get_prefs", "save_prefs", "info", "validate", "solar_forecast"]);
 
@@ -22,7 +21,7 @@ export function scopedMessage(message, locationId) {
   return message;
 }
 
-export function createLocationScope(initialHass, locationId, options = {}) {
+export function createLocationScope(initialHass, locationId) {
   let current = initialHass;
   const cache = Object.create(null);
   const listeners = new Set();
@@ -39,8 +38,7 @@ export function createLocationScope(initialHass, locationId, options = {}) {
         if (value && typeof value === "object" && "prefs" in value) value.prefs = undefined;
       }
     }
-    return mapped.type === `${DOMAIN}/get_prefs` && options.generators?.length
-      ? withGeneratorSources(result, options.generators) : result;
+    return result;
   };
   const subscription = (callback, message, ...args) => {
     if (message.type === "frontend/subscribe_system_data" && message.key === "energy") {
@@ -74,7 +72,6 @@ export function createLocationScope(initialHass, locationId, options = {}) {
           if (key === "callWS") return dispatch;
           if (key === "connection") return connection;
           if (key === "panelUrl") return `energy-locations/${locationId}`;
-          if (key === "config" && options.name) return { ...target.config, location_name: options.name };
           return Reflect.get(target, key);
         },
       });

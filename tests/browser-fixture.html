@@ -5,8 +5,6 @@
   // not the actual Home Assistant renderer or its charts.
   const prefs = label => ({energy_sources:[{type:'grid',stat_energy_from:'sensor.grid',name:label,cost_adjustment_day:0}],device_consumption:[],device_consumption_water:[]});
   window.calls = [];
-  window.fixtureGenerators = {};
-  window.publishedDashboards = [];
   window.loadedFragments = [];
   window.frontendPrefs = {a:{},b:{}};
   window.escapedContexts = [];
@@ -15,16 +13,14 @@
   window.locations = [{id:'a',name:'Home A'},{id:'b',name:'Home B'}];
   window.preferences = {a:prefs('A'),b:prefs('B')};
   class NativeEnergy extends HTMLElement {
-    set _lovelace(value){this._storedLovelace=value;window.publishedDashboards.push(value);}
-    get _lovelace(){return this._storedLovelace;}
     async _setLovelace(){this._lovelace={urlPath:'energy'};}
     connectedCallback(){ this.render(); }
     async render(){await this._setLovelace();const value=await this.hass.callWS({type:'energy/get_prefs'});this.attachShadow({mode:'open'}).innerHTML='<style>header{position:fixed;top:0;left:0;right:0;height:64px;background:white;z-index:10}</style><header>Native toolbar</header><p style="padding-top:64px">Dashboard: '+value.energy_sources[0]?.name+'</p>';}
   }
   class NativeSettings extends HTMLElement {
     connectedCallback(){
-      this.attachShadow({mode:'open'}).innerHTML='<div class="content"><h2>Native settings fixture</h2><button>Add grid fixture</button></div>';
-      this.updated?.(new Map());this.shadowRoot.querySelector('h2').textContent=this.hass.localize('test.settings');this.shadowRoot.querySelector('button').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'fixture-energy-dialog',dialogImport:async()=>{},dialogParams:{}}}));
+      this.attachShadow({mode:'open'}).innerHTML='<h2>Native settings fixture</h2><button>Add grid fixture</button>';
+      this.shadowRoot.querySelector('h2').textContent=this.hass.localize('test.settings');this.shadowRoot.querySelector('button').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'fixture-energy-dialog',dialogImport:async()=>{},dialogParams:{}}}));
     }
   }
   class EnergyDialog extends HTMLElement {
@@ -45,11 +41,10 @@
   class ConfigPanel extends HTMLElement {routerOptions={routes:{energy:{load:async()=>{}}}};}
   customElements.define('ha-panel-energy',NativeEnergy);customElements.define('ha-config-energy',NativeSettings);customElements.define('fixture-energy-dialog',EnergyDialog);customElements.define('partial-panel-resolver',Resolver);customElements.define('ha-panel-config',ConfigPanel);
   await import('/frontend/panel.js');
-  const hass={localize(){return "";},async loadFragmentTranslation(fragment){window.loadedFragments.push(fragment);return key=>key === "test.settings" ? "Translated settings" : "";},user:{is_admin:true},config:{version:'2026.11.0',time_zone:'Europe/Lisbon'},states:{},panels:{energy:{component_name:'energy'},config:{component_name:'config'}},connection:{},async callWS(msg){
+  const hass={localize(){return "";},async loadFragmentTranslation(fragment){window.loadedFragments.push(fragment);return key=>key === "test.settings" ? "Translated settings" : "";},user:{is_admin:true},config:{version:'2026.11.0'},states:{},panels:{energy:{component_name:'energy'},config:{component_name:'config'}},connection:{},async callWS(msg){
     window.calls.push(structuredClone(msg));
     if(msg.type.startsWith('energy/')) throw Error('Global energy API was called');
     if(msg.type.endsWith('locations/list'))return structuredClone(window.locations);
-    if(msg.type.endsWith('generators/get'))return window.fixtureGenerators[msg.location_id] || [];
     if(msg.type.endsWith('locations/create')){const item={id:'c',name:msg.name};window.locations.push(item);window.preferences.c={energy_sources:[],device_consumption:[],device_consumption_water:[]};return item;}
     if(msg.type.endsWith('get_prefs'))return structuredClone(window.preferences[msg.location_id]);
     if(msg.type.endsWith('save_prefs')){window.preferences[msg.location_id]={energy_sources:msg.energy_sources,device_consumption:msg.device_consumption,device_consumption_water:msg.device_consumption_water};return structuredClone(window.preferences[msg.location_id]);}

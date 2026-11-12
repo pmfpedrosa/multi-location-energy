@@ -4,42 +4,12 @@ An initial custom integration targeting **Home Assistant 2026.11.x**. It provide
 **Energy Locations** sidebar panel with independent configurations for each home,
 using the installed Home Assistant native Energy dashboard and setup components.
 
-**Status: 0.2.0 development preview.** Generator support has local automated tests;
-the new generator view still requires validation in a running Home Assistant
-2026.11 instance. Full native feature parity is not a completed certification.
-See [validation status](docs/VALIDATION.md).
-
-## Generators
-
-Choose a location, open **Generators → Configure generators**, and add one or
-more generators. Select an existing cumulative electricity meter and a dedicated
-cumulative natural-gas meter for each. Optional power and gas-flow sensors enable
-the Now display. For volume gas meters, enter the correct kWh fuel/m³ conversion
-and LHV/HHV basis; no universal conversion is assumed. Fuel-energy meters in kWh
-need no volume conversion. Sensors must have supported units and cumulative meters
-must have `total` or `total_increasing` state class and Recorder statistics.
-
-The generator-aware dashboard shows grid import/export, solar, each generator,
-battery charge/discharge and loads. With generators configured, the Dashboard
-button opens this view. Period totals use Recorder hourly changes over the selected
-dates in Home Assistant's timezone, including reset handling. Statistics can lag
-live meters. Efficiency is electrical output divided by fuel input, on the chosen
-heating-value basis; mismatched or missing history and zero fuel produce
-Unavailable rather than a misleading ratio. Values above 100% are flagged.
-
-Gas already shown in the location's native gas overview can be reused; it is not
-added a second time to gas totals. Do not assign one shared gas meter to multiple
-generators: use a combined generator entry or dedicated meters. The same meters
-can be used across locations for isolation tests. Fuel energy never enters the
-electricity balance. No per-generator grid-export attribution is inferred.
-
-**Current scope:** generator settings and calculations live in this integration's
-Generators view, not in Home Assistant's native source schema. Other native views
-do not include generator electricity and display a notice. Generator statistics
-are not inserted into native solar charts, forecasts, costs or CSV exports. The
-view reads existing sensors; it does not create efficiency sensor entities or
-control generator equipment. Live efficiency requires both power and fuel-rate
-measurements; historical efficiency requires matching hourly coverage.
+**Status: 0.2.4 rollback release.** Restores the application from v0.1.4,
+before generator support was added, with a newer version number for Marketplace.
+Each location uses the native Energy dashboard. The generator menu, generator
+configuration and generator dashboard replacement are removed. Existing location
+preferences and Recorder history are retained. Stored generator settings are
+ignored by this version. See [validation status](docs/VALIDATION.md).
 
 ## What is implemented
 

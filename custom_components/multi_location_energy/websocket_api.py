@@ -10,7 +10,6 @@ from homeassistant.components.energy.websocket_api import async_get_energy_platf
 from .const import DOMAIN
 from .data import DEVICE_CONSUMPTION_SCHEMA, ENERGY_SOURCE_SCHEMA
 from .validate import async_validate
-from .generators import validate_generators
 
 LOCATION = {p.Required("location_id"): str}
 
@@ -81,10 +80,6 @@ async def ws_get(hass, registry, msg):
 async def ws_save(hass, registry, msg):
     manager = registry.manager(msg["location_id"])
     update = {key: deepcopy(msg[key]) for key in ("energy_sources", "device_consumption", "device_consumption_water") if key in msg}
-    production = {g["energy"] for g in registry.generators(msg["location_id"])}
-    if any(source.get(key) in production for source in update.get("energy_sources", [])
-           for key in ("stat_energy_from", "stat_energy_to")):
-        raise p.Invalid("A generator electricity meter is already counted in this location")
     await manager.async_update(update)
     return deepcopy(manager.data)
 
@@ -137,33 +132,6 @@ async def ws_import(hass, registry, msg):
     return deepcopy(manager.data)
 
 
-@command("generators/get", LOCATION)
-async def ws_generators_get(hass, registry, msg):
-    return registry.generators(msg["location_id"])
-
-
-@command("generators/set", {**LOCATION, p.Required("generators"): list})
-async def ws_generators_set(hass, registry, msg):
-    values = validate_generators(hass, msg["generators"], registry.manager(msg["location_id"]).data or {})
-    await registry.async_set_generators(msg["location_id"], values)
-    return values
-
-
-@command("generators/period", {**LOCATION, p.Required("start"): str, p.Required("end"): str})
-async def ws_generators_period(hass, registry, msg):
-    from datetime import datetime, timedelta
-    from zoneinfo import ZoneInfo
-    try:
-        zone = ZoneInfo(hass.config.time_zone)
-        start = datetime.strptime(msg["start"], "%Y-%m-%d").replace(tzinfo=zone)
-        end = datetime.strptime(msg["end"], "%Y-%m-%d").replace(tzinfo=zone) + timedelta(days=1)
-        if end <= start or (end - start).days > 366:
-            raise ValueError
-    except (ValueError, TypeError) as error:
-        raise p.Invalid("Choose a date range of 1 to 366 days") from error
-    return {"start": start.isoformat(), "end": end.isoformat()}
-
-
 def async_setup(hass):
-    for handler in (ws_list, ws_create, ws_rename, ws_get, ws_save, ws_info, ws_validate, ws_forecast, ws_frontend_get, ws_frontend_set, ws_import, ws_generators_get, ws_generators_set, ws_generators_period):
+    for handler in (ws_list, ws_create, ws_rename, ws_get, ws_save, ws_info, ws_validate, ws_forecast, ws_frontend_get, ws_frontend_set, ws_import):
         websocket_api.async_register_command(hass, handler)

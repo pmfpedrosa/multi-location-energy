@@ -77,21 +77,6 @@ class LocationRegistry:
         self.manager(location_id)
         return deepcopy(self.locations[location_id].get("frontend", {}))
 
-    def generators(self, location_id):
-        self.manager(location_id)
-        return deepcopy(self.locations[location_id].get("generators", []))
-
-    async def async_set_generators(self, location_id, value):
-        async with self._lock:
-            self.manager(location_id)
-            previous = self.locations[location_id].get("generators", [])
-            self.locations[location_id]["generators"] = deepcopy(value)
-            try:
-                await self.async_save()
-            except Exception:
-                self.locations[location_id]["generators"] = previous
-                raise
-
     def listen_created(self, listener):
         self._created.append(listener)
         return lambda: self._created.remove(listener)

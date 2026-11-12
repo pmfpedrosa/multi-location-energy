@@ -1,6 +1,5 @@
-import { createLocationScope } from "./scope.js?v=0.2.3-beta.3";
-import { loadNativeEnergy } from "./native-loader.js?v=0.2.3-beta.3";
-import "./generators.js?v=0.2.3-beta.3";
+import { createLocationScope } from "./scope.js?v=0.2.4";
+import { loadNativeEnergy } from "./native-loader.js?v=0.2.4";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -30,7 +29,7 @@ class MlePanel extends HTMLElement {
     this._locations = [];
     this._contextSubscribers = new Set();
     this.addEventListener("context-request", event => {
-      const keys = ["hassConnection", "connection", "hassApi", "hassConfig", "hassUi", "hassInternationalization", "localize", "locale"];
+      const keys = ["hassConnection", "connection", "hassApi", "hassInternationalization", "localize", "locale"];
       if (!keys.includes(event.context)) return;
       event.stopPropagation();
       if (!this._scope) return;
@@ -47,13 +46,6 @@ class MlePanel extends HTMLElement {
     this.shadowRoot.querySelector("#locations").onchange = event => navigate(`${ROOT}/${event.target.value}/electricity`);
     this.shadowRoot.querySelector("#dashboard").onclick = () => this._go(false);
     this.shadowRoot.querySelector("#settings").onclick = () => this._go(true);
-    const generatorMenu = document.createElement("button");
-    generatorMenu.id = "generators"; generatorMenu.textContent = "Generators";
-    generatorMenu.onclick = () => {
-      const { location } = this._selection();
-      if (location) navigate(`${ROOT}/${location.id}/generators`);
-    };
-    this.shadowRoot.querySelector("#settings").after(generatorMenu);
     this.shadowRoot.querySelector("#create").onclick = () => this._nameDialog(false);
     this.shadowRoot.querySelector("#rename").onclick = () => this._nameDialog(true);
     this.shadowRoot.querySelector("#cancel").onclick = () => this.shadowRoot.querySelector("dialog").close();
@@ -71,7 +63,6 @@ class MlePanel extends HTMLElement {
     if (this._scope) {
       const scoped = this._scope.update(this._withTranslations(hass));
       if (this._child) this._child.hass = scoped;
-      if (this._generatorSettings) this._generatorSettings.hass = scoped;
       for (const dialog of this._dialogRoot.children) dialog.hass = scoped;
       for (const notify of this._contextSubscribers) notify();
     }
@@ -81,14 +72,7 @@ class MlePanel extends HTMLElement {
   get hass() { return this._hass; }
   _withTranslations(hass) {
     if (!this._nativeLocalize) return hass;
-    // The native panel rebuilds its dashboard when localize changes identity.
-    // Sensor updates must not look like a language change.
-    if (this._localizeSource !== hass.localize || this._localizeFallback !== this._nativeLocalize) {
-      this._localizeSource = hass.localize;
-      this._localizeFallback = this._nativeLocalize;
-      this._scopedLocalize = (...args) => this._localizeSource(...args) || this._localizeFallback(...args);
-    }
-    return { ...hass, localize: this._scopedLocalize };
+    return { ...hass, localize: (...args) => hass.localize(...args) || this._nativeLocalize(...args) };
   }
   set route(route) { this._route = route; if (this._started) this._onRoute(); }
   set narrow(narrow) { this._narrow = narrow; if (this._child) this._child.narrow = narrow; }
@@ -144,44 +128,24 @@ class MlePanel extends HTMLElement {
     if (!this._hass || !this._started || !customElements.get("ha-panel-energy")) return;
     const revision = ++this._renderRevision;
     const { location, settings, tab } = this._selection();
-    for (const id of ["settings", "dashboard", "rename", "generators"]) this.shadowRoot.querySelector(`#${id}`).disabled = !location;
+    for (const id of ["settings", "dashboard", "rename"]) this.shadowRoot.querySelector(`#${id}`).disabled = !location;
     if (!location) {
       this._main.innerHTML = '<div class="message"><h2>Independent energy dashboards for every location</h2><p>Add a location, then select its grid, solar, battery, gas, water and device measurements in Configure.</p></div>';
       return;
     }
     this.shadowRoot.querySelector("select").value = location.id;
-    const key = `${location.id}:${settings}:${tab}`;
+    const key = `${location.id}:${settings}`;
     if (this._mountKey === key && this._child) {
       this._child.route = { prefix: `${ROOT}/${location.id}${settings ? "/configure" : ""}`, path: `/${tab}` };
       return;
     }
-    const [prefs, generators] = await Promise.all([
-      this._call("get_prefs", { location_id: location.id }),
-      this._call("generators/get", { location_id: location.id }),
-    ]);
-    let extension;
-    if (!settings && tab !== "generators" && generators.length) {
-      extension = await import("./native-extension.js?v=0.2.3-beta.3");
-      await extension.loadGeneratorExtension(this._hass);
-    }
+    const prefs = await this._call("get_prefs", { location_id: location.id });
     if (revision !== this._renderRevision || !this.isConnected) return;
     this._main.replaceChildren(); this._dialogRoot.replaceChildren(); this._scope?.dispose();
-    this._generatorSettings = undefined;
     this._contextSubscribers.clear();
-    this._scope = createLocationScope(this._hass, location.id, {
-      name: location.name, generators: settings || tab === "generators" ? [] : generators,
-    });
+    this._scope = createLocationScope(this._hass, location.id);
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
-    if (tab === "generators") {
-      const editor = document.createElement("mle-generators");
-      editor.settingsOnly = true;
-      this._mountKey = key; this._child = editor;
-      this._main.append(editor);
-      await editor.configure(scopedHass, location.id, prefs);
-      this.shadowRoot.querySelector("#alert").textContent = "";
-      return;
-    }
-    if (!settings && !generators.length && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
+    if (!settings && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
       this._mountKey = undefined; this._child = undefined;
       const content = document.createElement("div"); content.className = "message";
       const heading = document.createElement("h2"); heading.textContent = location.name;
@@ -198,29 +162,7 @@ class MlePanel extends HTMLElement {
     if (!settings) {
       child._navigateConfig = event => { event?.stopPropagation(); navigate(`${ROOT}/${location.id}/configure/${["gas", "water"].includes(tab) ? tab : "electricity"}`); };
       const nativeSet = child._setLovelace.bind(child);
-      child.style.setProperty("--energy-generator-color", "#009688");
-      child._setLovelace = async () => {
-        // Initialize the extended collection before native code accesses its
-        // per-location cache. Native date controls then share that same data.
-        const config = extension ? await extension.generateGeneratorDashboard(
-          child.hass, generators, child._config?.hidden_cards, child.route?.path === "/now"
-        ) : undefined;
-        if (config) {
-          // Publish only the final config. Publishing native strategy views first
-          // lets hui-root start an asynchronous native view which can win the race.
-          child._lovelace = {
-            config, rawConfig: config, editMode: false,
-            urlPath: `energy-locations/${location.id}`, mode: "generated",
-            locale: child.hass.locale, enableFullEditMode: () => undefined,
-            saveConfig: async () => undefined, deleteConfig: async () => undefined,
-            setEditMode: () => child._navigateConfig(), showToast: () => undefined,
-          };
-        } else {
-          await nativeSet();
-          if(child._lovelace) child._lovelace = { ...child._lovelace,
-            urlPath: `energy-locations/${location.id}` };
-        }
-      };
+      child._setLovelace = async () => { await nativeSet(); if(child._lovelace) child._lovelace.urlPath = `energy-locations/${location.id}`; };
     } else {
       const nativeUpdated = child.updated?.bind(child);
       child.updated = changed => {

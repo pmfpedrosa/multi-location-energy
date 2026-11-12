@@ -89,7 +89,6 @@ const = load("const")
 helpers = load("helpers")
 data = load("data")
 registry_module = load("registry")
-generators_module = load("generators")
 
 # Minimal HA entity boundaries allow the actual vendored pricing and power
 # algorithms to run. This does not emulate Recorder or entity-platform startup.
@@ -187,29 +186,6 @@ class SchemaTests(unittest.TestCase):
 
 
 class RegistryTests(unittest.IsolatedAsyncioTestCase):
-    async def test_generators_persist_per_location_and_do_not_modify_native_preferences(self):
-        a = await self.registry.async_create("A")
-        b = await self.registry.async_create("B")
-        self.hass.states["sensor.production"] = State("sensor.production", 100)
-        self.hass.states["sensor.fuel"] = State("sensor.fuel", 100, "m³")
-        row = {"id": "g1", "name": "Generator", "energy": "sensor.production", "gas": "sensor.fuel", "gas_unit": "m³", "factor": 10, "basis": "LHV"}
-        values = generators_module.validate_generators(self.hass, [row], {})
-        await self.registry.async_set_generators(a["id"], values)
-        values[0]["name"] = "Mutated"
-        self.assertEqual(self.registry.generators(a["id"])[0]["name"], "Generator")
-        self.assertEqual(self.registry.generators(b["id"]), [])
-        restarted = registry_module.LocationRegistry(self.hass)
-        await restarted.async_load()
-        self.assertEqual(restarted.generators(a["id"])[0]["factor"], 10)
-        self.assertEqual(restarted.manager(a["id"]).data["energy_sources"], [])
-        await restarted.async_close()
-        for invalid in [dict(row, factor=float("nan")), dict(row, factor=0), dict(row, energy="sensor.absent"), dict(row, gas="sensor.production")]:
-            with self.assertRaises(probatio.Invalid): generators_module.validate_generators(self.hass, [invalid], {})
-        with self.assertRaises(probatio.Invalid): generators_module.validate_generators(self.hass, [row, dict(row, id="g2")], {})
-        with self.assertRaises(probatio.Invalid): generators_module.validate_generators(self.hass, [row], {"energy_sources":[{"type":"solar","stat_energy_from":"sensor.production"}]})
-        # Reusing a gas overview meter is permitted without duplicating totals.
-        self.assertEqual(len(generators_module.validate_generators(self.hass, [row], {"energy_sources":[{"type":"gas","stat_energy_from":"sensor.fuel"}]})), 1)
-
     async def asyncSetUp(self):
         self.hass = Hass()
         self.registry = registry_module.LocationRegistry(self.hass)
