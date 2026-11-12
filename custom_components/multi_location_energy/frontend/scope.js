@@ -2,6 +2,25 @@
 const DOMAIN = "multi_location_energy";
 const ENERGY_COMMANDS = new Set(["get_prefs", "save_prefs", "info", "validate", "solar_forecast"]);
 
+// Match HA 2026.11's data/context/updateContext.ts: sensor updates must not
+// invalidate reactive registry, translation or configuration consumers.
+const CONTEXT_FIELDS = {
+  hassRegistries: ["entities", "devices", "areas", "floors"],
+  hassInternationalization: ["localize", "locale", "loadBackendTranslation", "loadFragmentTranslation", "language", "selectedLanguage", "translationMetadata"],
+  hassApi: ["callService", "callApi", "callApiRaw", "callWS", "sendWS", "fetchWithAuth"],
+  hassConnection: ["connection", "connected", "debugConnection", "hassUrl"],
+  hassUi: ["themes", "selectedTheme", "panels", "panelUrl", "dockedSidebar", "kioskMode", "enableShortcuts", "vibrate", "suspendWhenHidden"],
+  hassConfig: ["auth", "config", "user", "userData", "systemData"],
+  hassFormatters: ["formatEntityState", "formatEntityStateToParts", "formatEntityAttributeValue", "formatEntityAttributeValueToParts", "formatEntityAttributeName", "formatEntityName"],
+};
+
+export function scopedContext(hass, context, previous) {
+  const fields = CONTEXT_FIELDS[context];
+  if (!fields) return hass[context];
+  if (previous && fields.every(key => previous[key] === hass[key])) return previous;
+  return Object.fromEntries(fields.map(key => [key, hass[key]]));
+}
+
 export function scopedMessage(message, locationId) {
   if (message.type?.startsWith("energy/")) {
     const command = message.type.slice(7);
@@ -23,6 +42,7 @@ export function scopedMessage(message, locationId) {
 
 export function createLocationScope(initialHass, locationId, options = {}) {
   let current = initialHass;
+  let sourceConfig, namedConfig;
   const cache = Object.create(null);
   const listeners = new Set();
   const dispatch = async (message) => {
@@ -71,12 +91,17 @@ export function createLocationScope(initialHass, locationId, options = {}) {
     connection,
     update(hass) {
       current = hass;
+      if (sourceConfig !== hass.config || !namedConfig) {
+        sourceConfig = hass.config;
+        namedConfig = options.name ? { ...hass.config, location_name: options.name } : hass.config;
+      }
+      const config = namedConfig;
       return new Proxy(hass, {
         get(target, key) {
           if (key === "callWS") return dispatch;
           if (key === "connection") return connection;
           if (key === "panelUrl") return `energy-locations/${locationId}`;
-          if (key === "config" && options.name) return { ...target.config, location_name: options.name };
+          if (key === "config") return config;
           return Reflect.get(target, key);
         },
       });

@@ -24,10 +24,26 @@ try{
  await page.getByText('Frestia_1: 0.56 kWh',{exact:false}).first().waitFor();
  await page.getByText('Frestia_2: 33.77 kWh',{exact:false}).first().waitFor();
  assert.equal(await page.evaluate(()=>a._child.contexts.hassConfig.config.location_name),'Frestia_1');
- assert.equal(await page.evaluate(()=>b._child.contexts.hassUi.connection===b._child._hass.connection),true);
+ assert.equal(await page.evaluate(()=>b._child.contexts.hassConnection.connection===b._child._hass.connection),true);
  assert.equal(await page.evaluate(()=>a._child._hass.connection===date._child._hass.connection),true);
  assert.equal(await page.evaluate(()=>a._child._hass.connection===b._child._hass.connection),false);
  assert.deepEqual(await page.evaluate(()=>window.hass.connection._energy_dashboard),{native:true});
+ // Fixed historical dates: unrelated state traffic must not invalidate the
+ // reactive contexts used by native Sankey cards. Live hass.states still flows.
+ assert.deepEqual(await page.evaluate(()=>{
+   const before={...b._child.notifications},collection=b._child.collection;
+   for(let i=0;i<100;i++){
+     window.hass={...window.hass,states:{'sensor.unrelated':{state:String(i)}}};
+     for(const card of [a,b,date,independent])card.hass=window.hass;
+   }
+   return {unchanged:JSON.stringify(before)===JSON.stringify(b._child.notifications),
+     live:b._child._hass.states['sensor.unrelated'].state,collection:b._child.collection===collection};
+ }),{unchanged:true,live:'99',collection:true});
+ assert.equal(await page.evaluate(()=>{
+   const before=b._child.notifications.hassInternationalization;
+   window.hass={...window.hass,locale:{language:'pt'}};b.hass=window.hass;
+   return b._child.notifications.hassInternationalization-before;
+ }),1);
  await page.evaluate(()=>date._child.shadowRoot.querySelector('button').click());
  await page.waitForFunction(()=>b._child.collection.start.toISOString().startsWith('2026-11-11'));
  assert.equal(await page.evaluate(()=>independent._child.collection.start.toISOString().slice(0,10)),'2026-11-12');

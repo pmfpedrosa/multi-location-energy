@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Native Sankey redraw regression</title>
+<style>body{--primary-color:#03a9f4;--energy-grid-consumption-color:#488fc2;--state-unavailable-color:#999;--primary-text-color:#212121;--card-background-color:white}#cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}</style>
+<div id="cards"></div>
+<script type="module">
+await import('/dist/test-sankey.js');
+await import('/frontend/location-card.js');
+window.hass={user:{id:'admin',is_admin:true},config:{version:'2026.11.0',location_name:'Main'},panelUrl:'test',connection:{},
+ states:{},entities:{},devices:{},areas:{},floors:{},themes:{darkMode:false},locale:{language:'en',number_format:'language',time_format:'24',first_weekday:'monday'},
+ localize:key=>key.split('.').at(-1),formatEntityName:state=>state?.entity_id||'Device',
+ async callWS(message){if(message.type==='multi_location_energy/locations/list')return [{id:'a',name:'Frestia_1'},{id:'b',name:'Frestia_2'}];throw Error('Unexpected API '+message.type);}};
+// Supply the standard raw state context. The test injects fixed Recorder data
+// directly into the unmodified native card, so no live collection is required.
+document.addEventListener('context-request',event=>{if(event.context==='states')event.callback(hass.states,()=>{});});
+window.loadCardHelpers=async()=>({createCardElement(config){const child=document.createElement('hui-energy-sankey-card');child.setConfig(config);return child;}});
+window.makeData=(value)=>({start:new Date('2026-11-11T00:00:00Z'),end:new Date('2026-11-12T00:00:00Z'),
+ prefs:{energy_sources:[{type:'grid',stat_energy_from:'sensor.grid',stat_energy_to:'sensor.export'}],device_consumption:[]},
+ info:{},stats:{'sensor.grid':[{start:1794355200000,change:value}],'sensor.export':[{start:1794355200000,change:0}]},statsMetadata:{},statsCompare:{}});
+window.cards=[];
+for(const location of ['a','b']){
+ const card=document.createElement('multi-location-energy-card');card.setConfig({location_id:location,card_type:'energy-sankey'});card.hass=hass;document.querySelector('#cards').append(card);cards.push(card);
+}
+window.ready=true;
+</script>

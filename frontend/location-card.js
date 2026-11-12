@@ -1,5 +1,6 @@
 /** Wraps installed native HA cards with an explicitly location-scoped context. */
-import { acquireCardScope } from "./card-scope.js?v=0.3.0-beta.2";
+import { acquireCardScope } from "./card-scope.js?v=0.3.0-beta.3";
+import { scopedContext } from "./scope.js?v=0.3.0-beta.3";
 
 export const CARD_TYPES = [
   "energy-distribution", "energy-date-selection", "energy-usage-graph",
@@ -54,9 +55,13 @@ export class MultiLocationEnergyCard extends HTMLElement {
       if (!contexts.has(event.context)) return;
       event.stopPropagation();
       if (!this._lease || !this._hass) return;
+      let previous, initialized = false;
       const notify = () => {
         const scoped = this._lease.update(this._hass);
-        const value = ["connection", "locale", "localize"].includes(event.context) ? scoped[event.context] : scoped;
+        const value = scopedContext(scoped, event.context, previous);
+        if (initialized && value === previous) return;
+        previous = value;
+        initialized = true;
         event.callback(value, () => this._subscribers.delete(notify));
       };
       if (event.subscribe) this._subscribers.add(notify);
@@ -64,7 +69,7 @@ export class MultiLocationEnergyCard extends HTMLElement {
     });
   }
   static async getConfigElement() {
-    await import("./location-card-editor.js?v=0.3.0-beta.2");
+    await import("./location-card-editor.js?v=0.3.0-beta.3");
     return document.createElement("multi-location-energy-card-editor");
   }
   static async getStubConfig(hass) {

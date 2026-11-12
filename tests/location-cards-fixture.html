@@ -14,13 +14,13 @@ window.hass={user:{id:'admin',is_admin:true},config:{version:'2026.11.0',locatio
  throw Error('Unexpected call '+message.type);
 }};
 class NativeCard extends HTMLElement {
- constructor(){super();this.attachShadow({mode:'open'});this.contexts={};}
+ constructor(){super();this.attachShadow({mode:'open'});this.contexts={};this.notifications={};}
  setConfig(config){this.config=config;}
  set hass(value){this._hass=value;this.render();}
  connectedCallback(){
-  for(const context of ['hassConnection','hassApi','hassConfig','hassUi','hassInternationalization']){
+  for(const context of ['hassConnection','hassApi','hassConfig','hassUi','hassInternationalization','hassRegistries','hassFormatters']){
    const event=new Event('context-request',{bubbles:true,composed:true});event.context=context;event.subscribe=true;
-   event.callback=(value,unsub)=>{this.contexts[context]=value;};this.dispatchEvent(event);
+   event.callback=(value,unsub)=>{this.contexts[context]=value;this.notifications[context]=(this.notifications[context]||0)+1;};this.dispatchEvent(event);
   }
   const api=this.contexts.hassApi,connection=this.contexts.hassConnection.connection,key='_'+this.config.collection_key;
   let collection=connection[key];

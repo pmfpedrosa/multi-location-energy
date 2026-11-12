@@ -52,6 +52,12 @@ are session state, not saved location configuration.
 
 ## Native card types
 
+For a Sankey controlled by the date selector, use `energy-sankey` and the same
+`date_group` as the selector. It displays energy in kWh for that period.
+`power-sankey` displays live power in W and intentionally ignores selected dates.
+A selected day that is still in progress can gain energy as Recorder receives
+new readings; use a completed past day when checking historical stability.
+
 - `energy-distribution` (default)
 - `energy-date-selection`
 - `energy-usage-graph`, `energy-sources-table`, `energy-solar-graph`

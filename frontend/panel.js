@@ -1,5 +1,5 @@
-import { createLocationScope } from "./scope.js?v=0.3.0-beta.2";
-import { loadNativeEnergy } from "./native-loader.js?v=0.3.0-beta.2";
+import { createLocationScope, scopedContext } from "./scope.js?v=0.3.0-beta.3";
+import { loadNativeEnergy } from "./native-loader.js?v=0.3.0-beta.3";
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -33,9 +33,13 @@ class MlePanel extends HTMLElement {
       if (!keys.includes(event.context)) return;
       event.stopPropagation();
       if (!this._scope) return;
+      let previous, initialized = false;
       const notify = () => {
         const scoped = this._scope.update(this._withTranslations(this._hass));
-        const value = ["connection", "localize", "locale"].includes(event.context) ? scoped[event.context] : scoped;
+        const value = scopedContext(scoped, event.context, previous);
+        if (initialized && value === previous) return;
+        previous = value;
+        initialized = true;
         event.callback(value, () => this._contextSubscribers.delete(notify));
       };
       if (event.subscribe) this._contextSubscribers.add(notify);
@@ -72,7 +76,13 @@ class MlePanel extends HTMLElement {
   get hass() { return this._hass; }
   _withTranslations(hass) {
     if (!this._nativeLocalize) return hass;
-    return { ...hass, localize: (...args) => hass.localize(...args) || this._nativeLocalize(...args) };
+    if (this._sourceLocalize !== hass.localize || this._fallbackLocalize !== this._nativeLocalize) {
+      this._sourceLocalize = hass.localize;
+      this._fallbackLocalize = this._nativeLocalize;
+      const primary = hass.localize, fallback = this._nativeLocalize;
+      this._scopedLocalize = (...args) => primary(...args) || fallback(...args);
+    }
+    return { ...hass, localize: this._scopedLocalize };
   }
   set route(route) { this._route = route; if (this._started) this._onRoute(); }
   set narrow(narrow) { this._narrow = narrow; if (this._child) this._child.narrow = narrow; }

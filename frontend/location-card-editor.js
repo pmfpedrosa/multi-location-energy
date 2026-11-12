@@ -1,4 +1,4 @@
-import { CARD_TYPES, getLocations } from "./location-card.js?v=0.3.0-beta.2";
+import { CARD_TYPES, getLocations } from "./location-card.js?v=0.3.0-beta.3";
 
 class LocationCardEditor extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: "open" }); this._locations = []; }
@@ -29,7 +29,7 @@ class LocationCardEditor extends HTMLElement {
       <label>Native card<select id="kind" aria-label="Native card"></select></label>
       <label>Title (optional)<input id="title"></label>
       <label>Date group (optional)<input id="group" maxlength="100"></label>
-      <p>Cards in the same dashboard and date group share date and comparison selections. Use a different group for independent dates. Add a Date selection card to control the group.</p>
+      <p>Cards in the same dashboard and date group share date and comparison selections. Use a different group for independent dates. Power Sankey always shows live readings and ignores the selected date; use Energy Sankey for a selected period.</p>
       <details><summary>Advanced native options</summary><p>JSON options accepted by the selected native card. Type, collection key and dashboard links are managed automatically.</p><label>Native options<textarea id="options" spellcheck="false"></textarea></label></details>
       <p role="alert" id="error"></p>`;
     const locationSelect = this.shadowRoot.querySelector("#location");
@@ -46,6 +46,8 @@ class LocationCardEditor extends HTMLElement {
     for (const type of CARD_TYPES) {
       const option = document.createElement("option"); option.value = type;
       option.textContent = type.replace(/^energy-/, "").replaceAll("-", " ").replace(/^./, letter => letter.toUpperCase());
+      if (type === "energy-sankey") option.textContent = "Energy Sankey (selected period, kWh)";
+      if (type === "power-sankey") option.textContent = "Power Sankey (live, W)";
       kind.append(option);
     }
     kind.value = this._config.card_type || "energy-distribution";
