@@ -12,7 +12,7 @@ export async function loadGeneratorCards(hass, helpers) {
       helpers.createCardElement({type,collection_key:'energy_dashboard'});
       await customElements.whenDefined(`hui-${type}-card`);
     }
-    const native=await import('./native-energy.js?v=0.4.0-beta.1');
+    const native=await import('./native-energy.js?v=0.4.0');
     const Period=customElements.get('hui-energy-period-selector');
     if(!customElements.get('mle-hui-energy-period-selector'))customElements.define('mle-hui-energy-period-selector',class extends Period {
       _downloadData(){const collection=this._energyCollection.collection;if(collection)native.downloadEnergyData(collection,this._hassConfig.currency);}

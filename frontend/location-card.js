@@ -1,6 +1,6 @@
 /** Wraps installed native HA cards with an explicitly location-scoped context. */
-import { acquireCardScope } from "./card-scope.js?v=0.4.0-beta.1";
-import { scopedContext } from "./scope.js?v=0.4.0-beta.1";
+import { acquireCardScope } from "./card-scope.js?v=0.4.0";
+import { scopedContext } from "./scope.js?v=0.4.0";
 
 export const CARD_TYPES = [
   "energy-distribution", "energy-date-selection", "energy-usage-graph",
@@ -70,7 +70,7 @@ export class MultiLocationEnergyCard extends HTMLElement {
     });
   }
   static async getConfigElement() {
-    await import("./location-card-editor.js?v=0.4.0-beta.1");
+    await import("./location-card-editor.js?v=0.4.0");
     return document.createElement("multi-location-energy-card-editor");
   }
   static async getStubConfig(hass) {
@@ -131,7 +131,7 @@ export class MultiLocationEnergyCard extends HTMLElement {
       const prefs = await this._lease.update(this._hass).callWS({type:'energy/get_prefs'});
       let generatorTag;
       if(prefs.energy_sources.some(source=>source.type==='generator') || config.type.startsWith('energy-generator-')) {
-        const extension=await import('./generator-extension.js?v=0.4.0-beta.1');
+        const extension=await import('./generator-extension.js?v=0.4.0');
         const extendedNative=await extension.loadGeneratorCards(this._hass,native);
         if (revision !== this._revision || !this.isConnected) return;
         extension.initializeGeneratorCollection(extendedNative,this._lease.update(this._hass),this._lease.key);

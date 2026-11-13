@@ -4,10 +4,10 @@ An initial custom integration targeting **Home Assistant 2026.11.x**. It provide
 **Energy Locations** sidebar panel with independent configurations for each home,
 using the installed Home Assistant native Energy dashboard and setup components.
 
-**Development status: unpublished 0.4.0-beta.1 candidate.** Adds distinct generator
-sources and extends the native Energy cards for generator locations. Live
-acceptance on both locations is still required before publication. The deployed
-release remains 0.3.0-beta.3. Existing location preferences and Recorder history
+**Status: 0.4.0.** Adds distinct generator sources and extends the native Energy
+cards for generator locations. Tested on Frestia_1 with a simulated generator
+and Frestia_2 with its existing solar, battery and device configuration.
+Existing location preferences and Recorder history
 are retained. See [generator implementation and validation](docs/GENERATOR-IMPLEMENTATION.md),
 [card setup](docs/LOCATION-CARDS.md) and
 [validation status](docs/VALIDATION.md).

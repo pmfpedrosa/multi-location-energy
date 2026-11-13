@@ -67,7 +67,7 @@ new readings; use a completed past day when checking historical stability.
 - `energy-carbon-consumed-gauge`
 - `energy-gas-graph`, `energy-water-graph`, `water-sankey`
 - `power-sources-graph`, `power-sankey`
-- `energy-generator-graph`, `energy-generator-contribution` (unpublished generator candidate)
+- `energy-generator-graph`, `energy-generator-contribution`
 
 Power source graphs use the group's selected statistics period and native live
 sensor values. Distribution is energy in kWh for the selected period; it is not
@@ -88,7 +88,7 @@ options:
 Type, collection key and native dashboard links are managed by the wrapper and
 cannot be overridden in `options`. Distribution titles default to the location
 name. Native features depend on that location having the relevant measurements.
-The unpublished generator candidate selects generator-aware native-derived cards
+Generator support selects generator-aware native-derived cards
 when the selected location contains generators. Generator setup remains in the
 separate Generators menu. See [implementation and validation](GENERATOR-IMPLEMENTATION.md).
 

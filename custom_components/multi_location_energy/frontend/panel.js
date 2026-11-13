@@ -1,6 +1,6 @@
-import { createLocationScope, scopedContext } from "./scope.js?v=0.4.0-beta.1";
-import { loadNativeEnergy } from "./native-loader.js?v=0.4.0-beta.1";
-import { helpers } from './location-card.js?v=0.4.0-beta.1';
+import { createLocationScope, scopedContext } from "./scope.js?v=0.4.0";
+import { loadNativeEnergy } from "./native-loader.js?v=0.4.0";
+import { helpers } from './location-card.js?v=0.4.0';
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -160,7 +160,7 @@ class MlePanel extends HTMLElement {
     this._scope = createLocationScope(this._hass, location.id);
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
     if(tab==='generators'){
-      const {mountGeneratorEditor}=await import('./generator-editor.js?v=0.4.0-beta.1');
+      const {mountGeneratorEditor}=await import('./generator-editor.js?v=0.4.0');
       await mountGeneratorEditor(this._main,scopedHass,async()=>{this._mountKey=undefined;navigate(`${ROOT}/${location.id}/electricity`);});
       this._mountKey=undefined;this._child=undefined;return;
     }
@@ -185,7 +185,7 @@ class MlePanel extends HTMLElement {
       child.style.setProperty('--energy-generator-color','#009688');
       child._setLovelace = async () => {
         if(!hasGenerators){await nativeSet();if(child._lovelace)child._lovelace.urlPath=`energy-locations/${location.id}`;return;}
-        const {generatorDashboard}=await import('./generator-extension.js?v=0.4.0-beta.1');
+        const {generatorDashboard}=await import('./generator-extension.js?v=0.4.0');
         const config=await generatorDashboard(child.hass,await helpers(child.hass),child._config?.hidden_cards,child.route?.path==='/now');
         child._lovelace={config,rawConfig:config,editMode:false,urlPath:`energy-locations/${location.id}`,mode:'generated',locale:child.hass.locale,
           enableFullEditMode:()=>undefined,saveConfig:async()=>undefined,deleteConfig:async()=>undefined,setEditMode:()=>child._navigateConfig(),showToast:()=>undefined};

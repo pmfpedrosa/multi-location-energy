@@ -13,7 +13,7 @@ try{playwright=require("playwright");}catch{playwright=require(process.env.PLAYW
 const root=path.resolve(import.meta.dirname,"..");
 const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,"http://localhost").pathname;
-  if(pathname==="/"){res.setHeader("Content-Type","text/html");res.end('<!doctype html><body><script type="module">await import("/dist/test-controls.js");window.native=await import("/frontend/native-energy.js?v=0.4.0-beta.1");window.ready=true;</script>');return;}
+  if(pathname==="/"){res.setHeader("Content-Type","text/html");res.end('<!doctype html><body><script type="module">await import("/dist/test-controls.js");window.native=await import("/frontend/native-energy.js?v=0.4.0");window.ready=true;</script>');return;}
   const file=path.resolve(root,"."+pathname);
   if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
   res.setHeader("Content-Type","text/javascript");fs.createReadStream(file).on("error",()=>res.writeHead(404).end()).pipe(res);

@@ -1,4 +1,4 @@
-# Generator extension — unpublished acceptance candidate
+# Generator extension — 0.4.0
 
 Generators are stored as distinct `generator` entries in each location's
 `energy_sources`. Each has an immutable id, name, cumulative electricity statistic
@@ -8,7 +8,8 @@ Shared test meters across different locations remain permitted.
 
 The separate Generators menu edits only generator entries and preserves the
 latest native sources and devices. Concurrent generator edits are detected.
-No source configuration has been changed on the live installation by this work.
+A clearly named simulated generator is configured in Frestia_1 using existing
+meters. Frestia_2's source configuration is unchanged.
 
 Generator locations use namespaced adaptations of the pinned HA Frontend cards
 and strategies. Locations without generators continue to use installed native
@@ -41,7 +42,7 @@ not part of this electricity-only mockup implementation.
 
 ## Local validation
 
-- 19 JavaScript tests: including mockup balance (18 import + 12 production − 3
+- 20 JavaScript tests: including mockup balance (18 import + 12 production − 3
   export = 27 consumption), mixed generation/battery allocation and generators
   running in different time buckets.
 - 17 Python backend tests including generator validation and two-location
@@ -57,10 +58,37 @@ not part of this electricity-only mockup implementation.
 - Existing historical Sankey stability, reusable card/date-group/editor and
   native panel boundary regressions pass. Generator setup save is also checked.
 
-These are component/boundary tests, not live acceptance. Browser activation
-currently fails with `failed to activate captured window`; the dedicated Edge
-browser connector is also unavailable. Frestia_1 and Frestia_2 must be checked
-live before publication. The current HA installation remains v0.3.0-beta.3.
+## Live acceptance, 13 November 2026
+
+Installed development branches through Marketplace without publishing releases.
+Frestia_1 was configured using existing meters: production
+`sensor.solis_s6_eh1p_pv_total_energy_generation`, live power `sensor.bc_power`,
+name `SIMULATION - Generator 1`. These measurements are simulations, not an
+actual generator. For 12 November, the panel showed 12 kWh production and
+27.87 kWh consumption; its Now view included approximately 46 W generator power.
+Summary, Electricity and Now views rendered with generator-specific series.
+Frestia_2 retained native solar, battery, tariff costs, devices, untracked
+consumption, Sankey, distribution and gauges; its consumption was 30.5 kWh.
+
+Cold-loading the combined dashboard exposed an unextended collection created
+by the shared native date selector. Fixed by initializing the extended scoped
+collection first; a regression test verifies this ordering and isolation.
+Both distribution cards and Sankeys then included correct, separate data.
+Native date presets were visibly present (today, yesterday, week, month, quarter,
+year and rolling ranges). Historical selection updated both locations.
+
+LAN HTTP testing exposed unavailable `crypto.randomUUID`; setup now uses a
+`crypto.getRandomValues` fallback, also covered by the browser test.
+
+The generator diagram now preserves native grid/load spacing and the native
+grid-to-load line. Generator branches use solar-style curved connections to
+grid and load, including zero-flow connections. Layout tests verify spacing,
+native line alignment and both generator branches. Both diagrams were checked
+together live after the correction. No integration errors were reported.
+
+These checks do not certify every combination of optional providers and meters;
+gas/water configuration retention and full dashboard structure are also covered
+by component/boundary tests, not live generator-fuel measurements.
 
 ## Rebuild
 

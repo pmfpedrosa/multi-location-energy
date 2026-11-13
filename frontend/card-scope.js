@@ -1,5 +1,5 @@
 /** Shared native collections for reusable cards. Preferences never leave a location. */
-import { createLocationScope } from "./scope.js?v=0.4.0-beta.1";
+import { createLocationScope } from "./scope.js?v=0.4.0";
 
 const connections = new WeakMap();
 const encode = value => Array.from(new TextEncoder().encode(value), byte => byte.toString(16).padStart(2, "0")).join("");
