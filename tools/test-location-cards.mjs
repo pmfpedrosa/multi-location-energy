@@ -76,6 +76,7 @@ try{
  // Generator setup must preserve native sources/devices and detect another editor.
  await page.evaluate(async()=>{
    const {mountGeneratorEditor}=await import('/frontend/generator-editor.js');
+   Object.defineProperty(crypto,'randomUUID',{value:undefined,configurable:true});
    window.generatorHost=document.createElement('div');document.body.append(generatorHost);
    window.generatorPrefs={energy_sources:[{type:'grid',stat_energy_from:'sensor.a_import'}],device_consumption:[{stat_consumption:'sensor.appliance'}]};
    window.generatorApi={states:{},async callWS(message){

@@ -31,7 +31,11 @@ export async function mountGeneratorEditor(container,hass,onSaved) {
     }
   };
   const form=document.createElement('form'),add=document.createElement('button'),save=document.createElement('button');
-  add.type='button';add.textContent='Add generator';add.onclick=()=>{generators.push({type:'generator',id:crypto.randomUUID(),name:`Generator ${generators.length+1}`,stat_energy_from:''});render();};
+  add.type='button';add.textContent='Add generator';add.onclick=()=>{
+    // randomUUID is restricted to secure contexts; HA also supports LAN HTTP.
+    const id=crypto.randomUUID?.() || 'generator_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),byte=>byte.toString(16).padStart(2,'0')).join('');
+    generators.push({type:'generator',id,name:`Generator ${generators.length+1}`,stat_energy_from:''});render();
+  };
   save.type='submit';save.textContent='Save generators';save.style.marginLeft='12px';
   form.onsubmit=async event=>{
     event.preventDefault();save.disabled=true;status.textContent='';
