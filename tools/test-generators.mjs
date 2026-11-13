@@ -78,6 +78,9 @@ try{
       if(!grid||!home||home.left-grid.right<40||!gridPath)throw Error('Native grid-to-load connection lost');
       const flowBox=gridPath.getBoundingClientRect();
       if(Math.abs(flowBox.y-(home.top+home.height/2))>6)throw Error(`Grid flow is not aligned to home: ${flowBox.y} vs ${home.top+home.height/2}`);
+      if(data.prefs.energy_sources.some(s=>s.type==='generator')){
+        for(const destination of ['home','grid'])if(!distribution.shadowRoot.querySelector(`.generator-flow-overlay path[data-destination="${destination}"]`))throw Error(`Generator ${destination} branch missing`);
+      }
       output.push({name,total:consumption.total.used_total,
         distribution:distribution.shadowRoot.textContent,
         table:table.shadowRoot.textContent,
