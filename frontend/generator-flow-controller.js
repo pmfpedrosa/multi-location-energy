@@ -16,6 +16,11 @@ export class GeneratorFlowController {
     if(!overlay){overlay=document.createElementNS('http://www.w3.org/2000/svg','svg');overlay.classList.add('generator-flow-overlay');container.prepend(overlay);}
     const box=container.getBoundingClientRect();
     if(!box.width||!box.height)return;
+    // Keep HA's own grid/solar/battery flow layer aligned with its native rows.
+    // The generator summary is an extra flex row beneath that native diagram.
+    const lines=container.querySelector('.lines');
+    const summary=container.querySelector('.generator-destinations');
+    if(lines)lines.style.bottom=`${(lines.classList.contains('high')?100:0)+(summary?.getBoundingClientRect().height||0)}px`;
     overlay.setAttribute('viewBox',`0 0 ${box.width} ${box.height}`);
     overlay.replaceChildren();
     const targets=[['.circle-container.home .circle','used_generator'],['.circle-container.grid .circle','generator_to_grid'],['.circle-container.battery .circle','generator_to_battery']];

@@ -94,6 +94,7 @@ edit(cards + "hui-energy-distribution-card.ts", (replace,read,write) => {
     .generator-source .circle {border-color:var(--energy-generator-color);color:var(--primary-text-color)}
     .generator {color:var(--energy-generator-color);border-color:var(--energy-generator-color);stroke:var(--energy-generator-color)}
     .card-content {position:relative;display:flex;flex-direction:column}
+    .card-content > .row {width:100%}
     .generator-flow-overlay {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
     .circle-container,.generator-source {position:relative;z-index:1}
     .circle {background:var(--ha-card-background,var(--card-background-color,#fff))}

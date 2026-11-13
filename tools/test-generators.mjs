@@ -71,6 +71,13 @@ try{
       const contribution=await make('energy-generator-contribution',data);
       const power=await make('power-sankey',data);
       await new Promise(resolve=>setTimeout(resolve,600));
+      // Native grid/load circles keep their full row width and connecting line.
+      const grid=distribution.shadowRoot.querySelector('.circle-container.grid .circle')?.getBoundingClientRect();
+      const home=distribution.shadowRoot.querySelector('.circle-container.home .circle')?.getBoundingClientRect();
+      const gridPath=distribution.shadowRoot.querySelector('.lines path.grid');
+      if(!grid||!home||home.left-grid.right<40||!gridPath)throw Error('Native grid-to-load connection lost');
+      const flowBox=gridPath.getBoundingClientRect();
+      if(Math.abs(flowBox.y-(home.top+home.height/2))>6)throw Error(`Grid flow is not aligned to home: ${flowBox.y} vs ${home.top+home.height/2}`);
       output.push({name,total:consumption.total.used_total,
         distribution:distribution.shadowRoot.textContent,
         table:table.shadowRoot.textContent,
