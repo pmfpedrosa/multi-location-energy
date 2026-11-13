@@ -1,5 +1,6 @@
-import { createLocationScope, scopedContext } from "./scope.js?v=0.3.0-beta.3";
-import { loadNativeEnergy } from "./native-loader.js?v=0.3.0-beta.3";
+import { createLocationScope, scopedContext } from "./scope.js?v=0.4.0-beta.1";
+import { loadNativeEnergy } from "./native-loader.js?v=0.4.0-beta.1";
+import { helpers } from './location-card.js?v=0.4.0-beta.1';
 
 const API = "multi_location_energy";
 const ROOT = "/energy-locations";
@@ -28,6 +29,9 @@ class MlePanel extends HTMLElement {
     this._dialogRoot = this.shadowRoot.querySelector("#dialogs");
     this._locations = [];
     this._contextSubscribers = new Set();
+    const generatorButton=document.createElement('button');generatorButton.id='generators';generatorButton.textContent='Generators';
+    generatorButton.onclick=()=>{const {location}=this._selection();if(location)navigate(`${ROOT}/${location.id}/generators`);};
+    this.shadowRoot.querySelector('#settings').after(generatorButton);
     this.addEventListener("context-request", event => {
       const keys = ["hassConnection", "connection", "hassApi", "hassInternationalization", "localize", "locale"];
       if (!keys.includes(event.context)) return;
@@ -144,7 +148,7 @@ class MlePanel extends HTMLElement {
       return;
     }
     this.shadowRoot.querySelector("select").value = location.id;
-    const key = `${location.id}:${settings}`;
+    const key = `${location.id}:${settings}:${tab==='generators'}`;
     if (this._mountKey === key && this._child) {
       this._child.route = { prefix: `${ROOT}/${location.id}${settings ? "/configure" : ""}`, path: `/${tab}` };
       return;
@@ -155,6 +159,11 @@ class MlePanel extends HTMLElement {
     this._contextSubscribers.clear();
     this._scope = createLocationScope(this._hass, location.id);
     const scopedHass = this._scope.update(this._withTranslations(this._hass));
+    if(tab==='generators'){
+      const {mountGeneratorEditor}=await import('./generator-editor.js?v=0.4.0-beta.1');
+      await mountGeneratorEditor(this._main,scopedHass,async()=>{this._mountKey=undefined;navigate(`${ROOT}/${location.id}/electricity`);});
+      this._mountKey=undefined;this._child=undefined;return;
+    }
     if (!settings && !prefs.energy_sources.length && !prefs.device_consumption.length && !prefs.device_consumption_water.length) {
       this._mountKey = undefined; this._child = undefined;
       const content = document.createElement("div"); content.className = "message";
@@ -172,7 +181,15 @@ class MlePanel extends HTMLElement {
     if (!settings) {
       child._navigateConfig = event => { event?.stopPropagation(); navigate(`${ROOT}/${location.id}/configure/${["gas", "water"].includes(tab) ? tab : "electricity"}`); };
       const nativeSet = child._setLovelace.bind(child);
-      child._setLovelace = async () => { await nativeSet(); if(child._lovelace) child._lovelace.urlPath = `energy-locations/${location.id}`; };
+      const hasGenerators=prefs.energy_sources.some(source=>source.type==='generator');
+      child.style.setProperty('--energy-generator-color','#009688');
+      child._setLovelace = async () => {
+        if(!hasGenerators){await nativeSet();if(child._lovelace)child._lovelace.urlPath=`energy-locations/${location.id}`;return;}
+        const {generatorDashboard}=await import('./generator-extension.js?v=0.4.0-beta.1');
+        const config=await generatorDashboard(child.hass,await helpers(child.hass),child._config?.hidden_cards,child.route?.path==='/now');
+        child._lovelace={config,rawConfig:config,editMode:false,urlPath:`energy-locations/${location.id}`,mode:'generated',locale:child.hass.locale,
+          enableFullEditMode:()=>undefined,saveConfig:async()=>undefined,deleteConfig:async()=>undefined,setEditMode:()=>child._navigateConfig(),showToast:()=>undefined};
+      };
     } else {
       const nativeUpdated = child.updated?.bind(child);
       child.updated = changed => {

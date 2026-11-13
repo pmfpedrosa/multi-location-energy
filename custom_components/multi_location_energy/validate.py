@@ -799,7 +799,7 @@ async def _async_validate_location(hass: HomeAssistant, manager: data.EnergyMana
                 validate_calls,
             )
 
-        elif source["type"] == "solar":
+        elif source["type"] in ("solar", "generator"):
             wanted_statistics_metadata.add(source["stat_energy_from"])
             validate_calls.append(
                 functools.partial(

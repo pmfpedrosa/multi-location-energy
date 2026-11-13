@@ -73,5 +73,26 @@ try{
  assert.equal(await page.evaluate(()=>b._child.collection===window.bCollection),true);
  for(const width of [1100,360]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);}
  assert.deepEqual(errors,[]);
+ // Generator setup must preserve native sources/devices and detect another editor.
+ await page.evaluate(async()=>{
+   const {mountGeneratorEditor}=await import('/frontend/generator-editor.js');
+   window.generatorHost=document.createElement('div');document.body.append(generatorHost);
+   window.generatorPrefs={energy_sources:[{type:'grid',stat_energy_from:'sensor.a_import'}],device_consumption:[{stat_consumption:'sensor.appliance'}]};
+   window.generatorApi={states:{},async callWS(message){
+     if(message.type==='energy/get_prefs')return structuredClone(generatorPrefs);
+     if(message.type==='recorder/list_statistic_ids')return [{statistic_id:'sensor.sim_generator',name:'Simulation'}];
+     if(message.type==='energy/save_prefs'){window.savedGenerators=structuredClone(message);return;}
+     throw Error('Unexpected generator editor request');
+   }};
+   await mountGeneratorEditor(generatorHost,generatorApi,async()=>{window.generatorSaved=true;});
+ });
+ await page.getByRole('button',{name:'Add generator',exact:true}).click();
+ await page.getByLabel('Generator 1: Name',{exact:true}).fill('Simulation generator');
+ await page.getByLabel('Generator 1: Electricity production meter (kWh)',{exact:true}).fill('sensor.sim_generator');
+ await page.getByRole('button',{name:'Save generators',exact:true}).click();
+ await page.waitForFunction(()=>window.generatorSaved);
+ assert.deepEqual(await page.evaluate(()=>savedGenerators.energy_sources[0]),{type:'grid',stat_energy_from:'sensor.a_import'});
+ assert.equal(await page.evaluate(()=>savedGenerators.energy_sources[1].type),'generator');
+ assert.equal(await page.evaluate(()=>Object.hasOwn(savedGenerators,'device_consumption')),false);
  console.log('PASS: two-location native card boundaries, shared/independent dates, comparison, late joins, reconfiguration, editor, permissions and lifecycle.');
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

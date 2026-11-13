@@ -13,7 +13,13 @@ maps, config-entry sensor setup, durable saves and listener cleanup.
 tools/vendor_core.py reproduces the adaptations from retained upstream files.
 
 Native frontend components are loaded from the user's installed Home Assistant.
-They are not redistributed by the integration. Internal interfaces are isolated
-in frontend/native-loader.js and frontend/scope.js and require version testing.
+Generator locations additionally use adapted, namespaced Energy cards and
+strategies from Home Assistant Frontend 20261028.4, commit
+a67b691a451e0b3fc469679b07158f963a61842c. The build transformations are retained
+in tools/build-native.mjs and source hashes in upstream/frontend-extension.json.
+Changes add a distinct generator source to accounting, distribution, charts,
+tables, Sankeys, gauges, live power and CSV exports without replacing global
+Home Assistant definitions. See frontend/native-licenses.txt in the packaged
+integration for bundled third-party license notices.
 
 This is an independent community extension, not an official Home Assistant product.

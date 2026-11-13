@@ -239,9 +239,19 @@ class WaterSourceType(TypedDict):
     name: NotRequired[str]
 
 
+class GeneratorSourceType(TypedDict):
+    """A distinct source of generated electricity, independent of solar."""
+    type: Literal["generator"]
+    id: str
+    name: str
+    stat_energy_from: str
+    stat_rate: NotRequired[str]
+
+
 type SourceType = (
     GridSourceType
     | SolarSourceType
+    | GeneratorSourceType
     | HomeSourceType
     | BatterySourceType
     | GasSourceType
@@ -521,6 +531,35 @@ GRID_SOURCE_SCHEMA = probatio.All(
     _grid_ensure_single_price_export,
     _grid_ensure_at_least_one_stat,
 )
+GENERATOR_SOURCE_SCHEMA = probatio.Schema(
+    {
+        probatio.Required("type"): "generator",
+        probatio.Required("id"): probatio.All(str, probatio.Length(min=1, max=100)),
+        probatio.Required("name"): probatio.All(str, probatio.Length(min=1, max=100)),
+        probatio.Required("stat_energy_from"): str,
+        probatio.Optional("stat_rate"): str,
+    }
+)
+
+
+def _validate_generators(sources):
+    """A meter must not be double-counted as two production sources."""
+    ids = set()
+    production = set()
+    for source in sources:
+        if source["type"] not in ("solar", "generator"):
+            continue
+        meter = source["stat_energy_from"]
+        if meter in production:
+            raise probatio.Invalid("A production meter can only be configured once per location")
+        production.add(meter)
+        if source["type"] == "generator":
+            if source["id"] in ids:
+                raise probatio.Invalid("Generator IDs must be unique within a location")
+            ids.add(source["id"])
+    return sources
+
+
 SOLAR_SOURCE_SCHEMA = probatio.Schema(
     {
         probatio.Required("type"): "solar",
@@ -647,6 +686,7 @@ ENERGY_SOURCE_SCHEMA = probatio.All(
                 {
                     "grid": GRID_SOURCE_SCHEMA,
                     "solar": SOLAR_SOURCE_SCHEMA,
+                    "generator": GENERATOR_SOURCE_SCHEMA,
                     "home": HOME_SOURCE_SCHEMA,
                     "battery": BATTERY_SOURCE_SCHEMA,
                     "gas": GAS_SOURCE_SCHEMA,
@@ -657,6 +697,7 @@ ENERGY_SOURCE_SCHEMA = probatio.All(
     ),
     check_type_limits,
     _validate_grid_stat_uniqueness,
+    _validate_generators,
 )
 
 DEVICE_CONSUMPTION_SCHEMA = probatio.Schema(

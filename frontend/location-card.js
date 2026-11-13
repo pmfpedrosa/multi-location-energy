@@ -1,6 +1,6 @@
 /** Wraps installed native HA cards with an explicitly location-scoped context. */
-import { acquireCardScope } from "./card-scope.js?v=0.3.0-beta.3";
-import { scopedContext } from "./scope.js?v=0.3.0-beta.3";
+import { acquireCardScope } from "./card-scope.js?v=0.4.0-beta.1";
+import { scopedContext } from "./scope.js?v=0.4.0-beta.1";
 
 export const CARD_TYPES = [
   "energy-distribution", "energy-date-selection", "energy-usage-graph",
@@ -10,6 +10,7 @@ export const CARD_TYPES = [
   "energy-solar-consumed-gauge", "energy-carbon-consumed-gauge",
   "energy-gas-graph", "energy-water-graph", "water-sankey",
   "power-sources-graph", "power-sankey",
+  "energy-generator-graph", "energy-generator-contribution",
 ];
 const contexts = new Set(["hassConnection", "hassApi", "hassConfig", "hassUi", "hassInternationalization", "hassFormatters", "hassRegistries", "connection", "locale", "localize"]);
 
@@ -28,7 +29,7 @@ export function validateConfig(config) {
   return { ...config, card_type: cardType, options: { ...config.options } };
 }
 
-async function helpers(hass) {
+export async function helpers(hass) {
   if (!/^2026\.11\./.test(hass.config.version)) throw new Error("Energy Locations cards require Home Assistant 2026.11.x.");
   // Lovelace normally owns this helper. The fallback supports direct cold loads.
   if (!window.loadCardHelpers) {
@@ -69,7 +70,7 @@ export class MultiLocationEnergyCard extends HTMLElement {
     });
   }
   static async getConfigElement() {
-    await import("./location-card-editor.js?v=0.3.0-beta.3");
+    await import("./location-card-editor.js?v=0.4.0-beta.1");
     return document.createElement("multi-location-energy-card-editor");
   }
   static async getStubConfig(hass) {
@@ -127,15 +128,25 @@ export class MultiLocationEnergyCard extends HTMLElement {
       const group = JSON.stringify([hass.panelUrl || window.location.pathname, this._config.date_group || "default"]);
       this._lease = acquireCardScope(hass, location, group);
       const config = { ...this._config.options, type: this._config.card_type, collection_key: this._lease.key };
+      const prefs = await this._lease.update(this._hass).callWS({type:'energy/get_prefs'});
+      let generatorTag;
+      if(prefs.energy_sources.some(source=>source.type==='generator') || config.type.startsWith('energy-generator-')) {
+        const extension=await import('./generator-extension.js?v=0.4.0-beta.1');
+        await extension.loadGeneratorCards(this._hass,native);
+        if(extension.GENERATOR_CARDS.has(config.type)||config.type.startsWith('energy-generator-'))generatorTag=`mle-hui-${config.type}-card`;
+        this.style.setProperty('--energy-generator-color','#009688');
+      }
+      if (revision !== this._revision || !this.isConnected) return;
       if (config.type === "energy-distribution") {
         config.title ??= location.name;
         config.link_dashboard = false;
       }
-      native.createCardElement(config);
+      if(!generatorTag)native.createCardElement(config);
       // Helpers return a loading placeholder until the native card is defined.
-      await customElements.whenDefined(`hui-${config.type}-card`);
+      await customElements.whenDefined(generatorTag || `hui-${config.type}-card`);
       if (revision !== this._revision || !this.isConnected) return;
-      this._child = native.createCardElement(config);
+      this._child = generatorTag ? document.createElement(generatorTag) : native.createCardElement(config);
+      if(generatorTag)this._child.setConfig(config);
       this._child.hass = this._lease.update(this._hass);
       this._body.replaceChildren(this._child);
     } catch (error) {

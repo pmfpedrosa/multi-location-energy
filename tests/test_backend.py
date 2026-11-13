@@ -164,6 +164,17 @@ def grid(stat="sensor.grid", price=0.2, **extra):
 
 
 class SchemaTests(unittest.TestCase):
+    def test_generator_sources_are_distinct_and_location_local(self):
+        generator = {"type": "generator", "id": "one", "name": "Generator 1", "stat_energy_from": "sensor.generator_kwh", "stat_rate": "sensor.generator_power"}
+        self.assertEqual(data.ENERGY_SOURCE_SCHEMA([generator]), [generator])
+        self.assertEqual(data.ENERGY_SOURCE_SCHEMA([generator]), [generator])
+        with self.assertRaises(probatio.Invalid):
+            data.ENERGY_SOURCE_SCHEMA([generator, generator])
+        with self.assertRaises(probatio.Invalid):
+            data.ENERGY_SOURCE_SCHEMA([generator, {"type": "solar", "stat_energy_from": "sensor.generator_kwh"}])
+        with self.assertRaises(probatio.Invalid):
+            data.GENERATOR_SOURCE_SCHEMA({**generator, "config_entry_solar_forecast": []})
+
     def test_conflicting_prices_rejected(self):
         with self.assertRaises(probatio.Invalid): grid(entity_energy_price="sensor.price")
 
@@ -193,6 +204,19 @@ class RegistryTests(unittest.IsolatedAsyncioTestCase):
         await self.registry.async_load()
 
     async def asyncTearDown(self): await self.registry.async_close()
+
+    async def test_generator_preferences_survive_reload_without_affecting_other_location(self):
+        a = await self.registry.async_create("Frestia_1")
+        b = await self.registry.async_create("Frestia_2")
+        generator = {"type": "generator", "id": "simulation", "name": "Simulation generator", "stat_energy_from": "sensor.sim_energy"}
+        await self.registry.manager(a["id"]).async_update({"energy_sources": data.ENERGY_SOURCE_SCHEMA([grid(), generator])})
+        await self.registry.manager(b["id"]).async_update({"energy_sources": [grid(price=0.35)]})
+        restarted = registry_module.LocationRegistry(self.hass)
+        await restarted.async_load()
+        self.assertEqual(restarted.manager(a["id"]).data["energy_sources"][1], generator)
+        self.assertEqual(len(restarted.manager(b["id"]).data["energy_sources"]), 1)
+        self.assertEqual(restarted.manager(b["id"]).data["energy_sources"][0]["number_energy_price"], 0.35)
+        await restarted.async_close()
 
     async def test_two_homes_same_meter_different_tariffs_survive_reload(self):
         a = await self.registry.async_create("Home A")

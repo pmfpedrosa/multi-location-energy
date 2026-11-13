@@ -7,7 +7,7 @@ await import('/frontend/location-card.js');
 window.hass={user:{id:'admin',is_admin:true},config:{version:'2026.11.0',location_name:'Main'},panelUrl:'test',connection:{},
  states:{},entities:{},devices:{},areas:{},floors:{},themes:{darkMode:false},locale:{language:'en',number_format:'language',time_format:'24',first_weekday:'monday'},
  localize:key=>key.split('.').at(-1),formatEntityName:state=>state?.entity_id||'Device',
- async callWS(message){if(message.type==='multi_location_energy/locations/list')return [{id:'a',name:'Frestia_1'},{id:'b',name:'Frestia_2'}];throw Error('Unexpected API '+message.type);}};
+ async callWS(message){if(message.type==='multi_location_energy/locations/list')return [{id:'a',name:'Frestia_1'},{id:'b',name:'Frestia_2'}];if(message.type==='multi_location_energy/get_prefs')return makeData(1).prefs;throw Error('Unexpected API '+message.type);}};
 // Supply the standard raw state context. The test injects fixed Recorder data
 // directly into the unmodified native card, so no live collection is required.
 document.addEventListener('context-request',event=>{if(event.context==='states')event.callback(hass.states,()=>{});});
