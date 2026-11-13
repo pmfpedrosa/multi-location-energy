@@ -1,6 +1,11 @@
 /** Isolated native card implementations; never replace global HA definitions. */
 export const GENERATOR_CARDS = new Set(['energy-distribution','energy-usage-graph','energy-sources-table','energy-sankey','energy-self-sufficiency-gauge','energy-carbon-consumed-gauge','energy-devices-graph','energy-devices-detail-graph','energy-solar-consumed-gauge','power-sources-graph','power-sankey','energy-date-selection']);
 let pending;
+export function initializeGeneratorCollection(native,hass,key) {
+  // The native period selector is a shared HA class. Seed its scoped cache with
+  // the extended data collector before it can create an unextended collection.
+  return native.getEnergyDataCollection(hass.connection,{callWS:hass.callWS,states:hass.states,entities:hass.entities,locale:hass.locale,config:hass.config,panelUrl:hass.panelUrl,key});
+}
 export async function loadGeneratorCards(hass, helpers) {
   pending ||= (async()=>{
     for(const type of [...GENERATOR_CARDS,'energy-solar-graph']){

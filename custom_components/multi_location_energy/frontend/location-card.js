@@ -132,7 +132,9 @@ export class MultiLocationEnergyCard extends HTMLElement {
       let generatorTag;
       if(prefs.energy_sources.some(source=>source.type==='generator') || config.type.startsWith('energy-generator-')) {
         const extension=await import('./generator-extension.js?v=0.4.0-beta.1');
-        await extension.loadGeneratorCards(this._hass,native);
+        const extendedNative=await extension.loadGeneratorCards(this._hass,native);
+        if (revision !== this._revision || !this.isConnected) return;
+        extension.initializeGeneratorCollection(extendedNative,this._lease.update(this._hass),this._lease.key);
         if(extension.GENERATOR_CARDS.has(config.type)||config.type.startsWith('energy-generator-'))generatorTag=`mle-hui-${config.type}-card`;
         this.style.setProperty('--energy-generator-color','#009688');
       }
